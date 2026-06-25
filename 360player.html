@@ -6,172 +6,67 @@
 <title>360° VR Player</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0a0a0f; color: #e8e4f0; font-family: 'Inter', system-ui, sans-serif; overflow: hidden; height: 100vh; }
-
+  body { background: #0a0a0f; color: #e8e4f0; font-family: system-ui, sans-serif; overflow: hidden; height: 100vh; }
   #canvas-container { position: fixed; inset: 0; }
-  canvas { display: block; width: 100% !important; height: 100% !important; }
+  canvas { display: block; }
 
-  /* HUD overlay */
-  #hud {
-    position: fixed; inset: 0; pointer-events: none;
-    display: flex; flex-direction: column; justify-content: space-between;
-  }
-
-  /* Top bar */
+  #hud { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
   #top-bar {
-    pointer-events: all;
-    display: flex; align-items: center; justify-content: space-between;
+    pointer-events: all; display: flex; align-items: center; justify-content: space-between;
     padding: 18px 24px;
-    background: linear-gradient(to bottom, rgba(10,10,15,0.85) 0%, transparent 100%);
+    background: linear-gradient(to bottom, rgba(10,10,15,0.85), transparent);
   }
-  #video-title { font-size: 15px; font-weight: 500; letter-spacing: 0.01em; opacity: 0.9; }
+  #video-title { font-size: 15px; font-weight: 500; }
   #video-meta  { font-size: 12px; color: #9b93b8; margin-top: 2px; }
-
-  #top-right { display: flex; gap: 10px; }
   .icon-btn {
     width: 36px; height: 36px; border-radius: 8px;
     background: rgba(255,255,255,0.08); border: 0.5px solid rgba(255,255,255,0.12);
     color: #e8e4f0; cursor: pointer; font-size: 16px;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center; transition: background 0.15s;
   }
   .icon-btn:hover { background: rgba(255,255,255,0.16); }
-  .icon-btn.active { background: rgba(139, 92, 246, 0.3); border-color: rgba(139,92,246,0.5); }
 
-  /* Bottom bar */
   #bottom-bar {
-    pointer-events: all;
-    padding: 0 24px 22px;
-    background: linear-gradient(to top, rgba(10,10,15,0.9) 0%, transparent 100%);
+    pointer-events: all; padding: 0 24px 22px;
+    background: linear-gradient(to top, rgba(10,10,15,0.9), transparent);
   }
-
-  /* Scrubber */
-  #scrubber-wrap { position: relative; margin-bottom: 14px; cursor: pointer; height: 4px; }
-  #scrubber-track {
-    position: absolute; top: 0; left: 0; right: 0; height: 4px;
-    background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden;
-  }
-  #scrubber-fill {
-    height: 100%; width: 0%; background: #8b5cf6; border-radius: 2px;
-    transition: width 0.1s linear;
-  }
-  #scrubber-wrap:hover #scrubber-track { transform: scaleY(1.6); transform-origin: bottom; }
-
-  /* Controls row */
+  #scrubber-wrap { position: relative; margin-bottom: 14px; cursor: pointer; height: 12px; display: flex; align-items: center; }
+  #scrubber-track { position: absolute; left: 0; right: 0; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; }
+  #scrubber-fill  { height: 100%; width: 0%; background: #8b5cf6; border-radius: 2px; }
   #controls { display: flex; align-items: center; gap: 12px; }
-
-  .ctrl-btn {
-    background: none; border: none; color: #e8e4f0; cursor: pointer;
-    font-size: 20px; line-height: 1; padding: 4px; opacity: 0.85;
-    transition: opacity 0.15s;
-  }
+  .ctrl-btn { background: none; border: none; color: #e8e4f0; cursor: pointer; font-size: 20px; padding: 4px; opacity: 0.85; transition: opacity 0.15s; }
   .ctrl-btn:hover { opacity: 1; }
-
   #time-display { font-size: 13px; color: #9b93b8; font-variant-numeric: tabular-nums; }
-
   .spacer { flex: 1; }
-
-  /* Volume */
   #vol-wrap { display: flex; align-items: center; gap: 8px; }
-  #vol-slider {
-    -webkit-appearance: none; appearance: none;
-    width: 72px; height: 3px; background: rgba(255,255,255,0.2);
-    border-radius: 2px; outline: none; cursor: pointer;
-  }
-  #vol-slider::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 12px; height: 12px;
-    border-radius: 50%; background: #e8e4f0; cursor: pointer;
-  }
+  #vol-slider { -webkit-appearance: none; width: 72px; height: 3px; background: rgba(255,255,255,0.2); border-radius: 2px; outline: none; cursor: pointer; }
+  #vol-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #e8e4f0; }
 
-  /* Info panel (side drawer) */
-  #info-panel {
-    position: fixed; top: 0; right: 0; height: 100%;
-    width: 300px; background: rgba(14,13,22,0.96);
-    border-left: 0.5px solid rgba(255,255,255,0.1);
-    padding: 24px 20px; overflow-y: auto;
-    transform: translateX(100%); transition: transform 0.3s ease;
-    pointer-events: all; z-index: 10;
-  }
-  #info-panel.open { transform: translateX(0); }
-
-  .panel-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #9b93b8; margin-bottom: 12px; }
-  .info-row { margin-bottom: 16px; }
-  .info-label { font-size: 11px; color: #9b93b8; margin-bottom: 3px; }
-  .info-value { font-size: 14px; }
-
-  .tag {
-    display: inline-block; font-size: 11px; padding: 3px 8px;
-    background: rgba(139,92,246,0.2); border: 0.5px solid rgba(139,92,246,0.4);
-    border-radius: 4px; color: #c4b5fd; margin: 2px 3px 2px 0;
-  }
-
-  #chapter-list { list-style: none; }
-  .chapter-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 10px; border-radius: 8px; cursor: pointer;
-    transition: background 0.15s; font-size: 13px;
-  }
-  .chapter-item:hover { background: rgba(255,255,255,0.06); }
-  .chapter-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: rgba(139,92,246,0.5); flex-shrink: 0;
-  }
-  .chapter-time { font-size: 11px; color: #9b93b8; margin-left: auto; font-variant-numeric: tabular-nums; }
-
-  /* VR enter button */
   #vr-btn {
-    position: fixed; bottom: 90px; right: 24px;
-    pointer-events: all;
+    position: fixed; bottom: 90px; right: 24px; pointer-events: all;
     background: rgba(139,92,246,0.2); border: 0.5px solid rgba(139,92,246,0.5);
     color: #c4b5fd; padding: 10px 18px; border-radius: 8px;
-    font-size: 13px; font-weight: 500; cursor: pointer;
-    display: none; /* shown when WebXR available */
-    transition: background 0.15s;
+    font-size: 13px; font-weight: 500; cursor: pointer; display: none; transition: background 0.15s;
   }
   #vr-btn:hover { background: rgba(139,92,246,0.35); }
 
-  /* Drop zone */
   #drop-zone {
-    position: fixed; inset: 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: rgba(10,10,15,0.97); z-index: 20;
-    gap: 16px;
+    position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: rgba(10,10,15,0.97); z-index: 20; gap: 16px;
   }
-  #drop-zone .dz-icon { font-size: 48px; opacity: 0.5; }
   #drop-zone h2 { font-size: 22px; font-weight: 500; }
   #drop-zone p  { font-size: 14px; color: #9b93b8; text-align: center; max-width: 320px; line-height: 1.6; }
   #drop-zone.drag-over { border: 2px dashed rgba(139,92,246,0.6); }
-
-  .dz-btn {
-    margin-top: 8px; padding: 10px 24px; border-radius: 8px;
-    background: rgba(139,92,246,0.2); border: 0.5px solid rgba(139,92,246,0.5);
-    color: #c4b5fd; font-size: 14px; cursor: pointer; transition: background 0.15s;
-  }
+  .dz-btn { padding: 10px 24px; border-radius: 8px; background: rgba(139,92,246,0.2); border: 0.5px solid rgba(139,92,246,0.5); color: #c4b5fd; font-size: 14px; cursor: pointer; transition: background 0.15s; }
   .dz-btn:hover { background: rgba(139,92,246,0.35); }
-
+  #url-input { flex:1; background:rgba(255,255,255,0.06); border:0.5px solid rgba(255,255,255,0.15); border-radius:8px; padding:9px 12px; color:#e8e4f0; font-size:13px; outline:none; }
   #file-input { display: none; }
 
-  /* Loading spinner */
-  #loader {
-    position: fixed; inset: 0; display: none;
-    align-items: center; justify-content: center;
-    background: rgba(10,10,15,0.7); z-index: 15; flex-direction: column; gap: 12px;
-  }
+  #loader { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(10,10,15,0.7); z-index: 15; flex-direction: column; gap: 12px; }
   #loader.show { display: flex; }
-  .spinner {
-    width: 36px; height: 36px; border-radius: 50%;
-    border: 2px solid rgba(139,92,246,0.2);
-    border-top-color: #8b5cf6; animation: spin 0.8s linear infinite;
-  }
+  .spinner { width: 36px; height: 36px; border-radius: 50%; border: 2px solid rgba(139,92,246,0.2); border-top-color: #8b5cf6; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* Hint toast */
-  #hint {
-    position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%);
-    background: rgba(14,13,22,0.9); border: 0.5px solid rgba(255,255,255,0.1);
-    padding: 8px 16px; border-radius: 8px; font-size: 13px; color: #9b93b8;
-    pointer-events: none; transition: opacity 0.5s; opacity: 0;
-  }
+  #hint { position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%); background: rgba(14,13,22,0.9); border: 0.5px solid rgba(255,255,255,0.1); padding: 8px 16px; border-radius: 8px; font-size: 13px; color: #9b93b8; pointer-events: none; transition: opacity 0.5s; opacity: 0; }
   #hint.show { opacity: 1; }
 </style>
 </head>
@@ -179,36 +74,27 @@
 
 <div id="canvas-container"></div>
 
-<!-- Drop / open zone -->
 <div id="drop-zone">
-  <div class="dz-icon">🎬</div>
+  <div style="font-size:48px;opacity:0.5">🎬</div>
   <h2>360° VR Player</h2>
-  <p>Drop a 360° video file here, or use a URL. Equirectangular format (2:1) works best.</p>
+  <p>Drop a 360° video file here, or paste a URL. Works in browser and Meta Quest VR.</p>
   <button class="dz-btn" onclick="document.getElementById('file-input').click()">Open video file</button>
-  <div style="display:flex;gap:8px;margin-top:4px;width:280px;">
-    <input id="url-input" placeholder="Or paste a video URL…"
-      style="flex:1;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.15);
-             border-radius:8px;padding:9px 12px;color:#e8e4f0;font-size:13px;outline:none;">
-    <button class="dz-btn" style="margin:0;padding:9px 14px;" onclick="loadURL()">Go</button>
+  <div style="display:flex;gap:8px;margin-top:4px;width:300px;">
+    <input id="url-input" placeholder="Or paste a video URL…">
+    <button class="dz-btn" style="padding:9px 14px;" onclick="loadURL()">Go</button>
   </div>
   <input type="file" id="file-input" accept="video/*">
 </div>
 
-<!-- Loader -->
-<div id="loader"><div class="spinner"></div><span style="font-size:13px;color:#9b93b8;">Loading video…</span></div>
+<div id="loader"><div class="spinner"></div><span style="font-size:13px;color:#9b93b8">Loading…</span></div>
 
-<!-- HUD -->
-<div id="hud" style="display:none;">
+<div id="hud" style="display:none">
   <div id="top-bar">
     <div>
       <div id="video-title">Untitled 360° Video</div>
       <div id="video-meta">Equirectangular · 360°</div>
     </div>
-    <div id="top-right">
-      <button class="icon-btn" id="info-toggle" title="Video info" onclick="togglePanel()">ℹ</button>
-    </div>
   </div>
-
   <div id="bottom-bar">
     <div id="scrubber-wrap" onclick="scrubClick(event)">
       <div id="scrubber-track"><div id="scrubber-fill"></div></div>
@@ -218,65 +104,34 @@
       <span id="time-display">0:00 / 0:00</span>
       <div class="spacer"></div>
       <div id="vol-wrap">
-        <button class="ctrl-btn" onclick="toggleMute()" title="Mute">🔊</button>
+        <button class="ctrl-btn" onclick="toggleMute()">🔊</button>
         <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="1" oninput="setVolume(this.value)">
       </div>
-      <button class="ctrl-btn" onclick="openNewFile()" title="Open file" style="font-size:15px;">📂</button>
+      <button class="ctrl-btn" onclick="openNewFile()" style="font-size:15px">📂</button>
     </div>
   </div>
 </div>
 
-<!-- Info / metadata panel -->
-<div id="info-panel">
-  <div class="panel-title">Video info</div>
-  <div class="info-row">
-    <div class="info-label">Title</div>
-    <div class="info-value" id="meta-title">—</div>
-  </div>
-  <div class="info-row">
-    <div class="info-label">Format</div>
-    <div class="info-value">Equirectangular 360°</div>
-  </div>
-  <div class="info-row">
-    <div class="info-label">Tags</div>
-    <div id="meta-tags"><span class="tag">360°</span><span class="tag">VR</span></div>
-  </div>
-  <div style="border-top:0.5px solid rgba(255,255,255,0.08);margin:20px 0;"></div>
-  <div class="panel-title">Chapters</div>
-  <ul id="chapter-list">
-    <li class="chapter-item" onclick="seekTo(0)">
-      <div class="chapter-dot"></div> Start <span class="chapter-time">0:00</span>
-    </li>
-  </ul>
-  <div style="border-top:0.5px solid rgba(255,255,255,0.08);margin:20px 0;"></div>
-  <div class="panel-title">Controls</div>
-  <div style="font-size:12px;color:#9b93b8;line-height:1.8;">
-    <div>🖱 Drag — look around</div>
-    <div>📱 Touch drag — look around</div>
-    <div>⌨ Space — play / pause</div>
-    <div>← → — seek 5 seconds</div>
-    <div>M — mute / unmute</div>
-    <div>F — fullscreen</div>
-  </div>
-</div>
-
-<!-- VR enter -->
 <button id="vr-btn" onclick="enterVR()">⬛ Enter VR</button>
-
-<!-- Hint toast -->
 <div id="hint">Drag to look around</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
-let renderer, scene, camera, sphere, videoTexture;
+// ─── State ────────────────────────────────────────────────────────────────────
+let renderer, scene, camera;
+let sphere, videoTexture;
 let video = null;
 let isDragging = false, prevX = 0, prevY = 0;
 let yaw = 0, pitch = 0;
 let xrSession = null;
-let animId;
 
-// ─── Init Three.js ────────────────────────────────────────────────────────────
+// VR UI state
+let vrPanel = null, vrPanelCanvas = null, vrPanelCtx = null, vrPanelTexture = null;
+let vrCursor = null;
+let vrControllers = [];
+let raycaster = new THREE.Raycaster();
+
+// ─── Three.js init ────────────────────────────────────────────────────────────
 function initThree() {
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -285,7 +140,7 @@ function initThree() {
   document.getElementById('canvas-container').appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000);
   camera.position.set(0, 0, 0);
 
   window.addEventListener('resize', () => {
@@ -294,7 +149,7 @@ function initThree() {
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // Mouse / touch controls
+  // Desktop mouse controls
   const el = renderer.domElement;
   el.addEventListener('mousedown',  e => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
   el.addEventListener('mouseup',    () => isDragging = false);
@@ -303,7 +158,6 @@ function initThree() {
   el.addEventListener('touchend',   () => isDragging = false);
   el.addEventListener('touchmove',  e => onPointerMove({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }), { passive: true });
 
-  // Keyboard
   document.addEventListener('keydown', e => {
     if (!video) return;
     if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
@@ -313,38 +167,207 @@ function initThree() {
     if (e.code === 'KeyF') toggleFullscreen();
   });
 
-  // Check WebXR
+  // WebXR check
   if (navigator.xr) {
     navigator.xr.isSessionSupported('immersive-vr').then(ok => {
       if (ok) document.getElementById('vr-btn').style.display = 'block';
     });
   }
 
-  animate();
+  renderer.setAnimationLoop(render);
 }
 
 function onPointerMove(e) {
   if (!isDragging) return;
-  const dx = e.clientX - prevX;
-  const dy = e.clientY - prevY;
-  yaw   -= dx * 0.25;
-  pitch -= dy * 0.25;
+  yaw   -= (e.clientX - prevX) * 0.25;
+  pitch -= (e.clientY - prevY) * 0.25;
   pitch  = Math.max(-85, Math.min(85, pitch));
   prevX = e.clientX; prevY = e.clientY;
 }
 
-// ─── Sphere setup ─────────────────────────────────────────────────────────────
+// ─── 360 sphere ───────────────────────────────────────────────────────────────
 function createSphere(texture) {
   if (sphere) scene.remove(sphere);
-  const geo  = new THREE.SphereGeometry(500, 60, 40);
-  // flip normals to see inside
+  const geo = new THREE.SphereGeometry(500, 60, 40);
   geo.scale(-1, 1, 1);
-  const mat  = new THREE.MeshBasicMaterial({ map: texture, side: THREE.FrontSide });
-  sphere = new THREE.Mesh(geo, mat);
+  sphere = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: texture }));
   scene.add(sphere);
 }
 
-// ─── Load video ───────────────────────────────────────────────────────────────
+// ─── VR Panel (in-world UI) ───────────────────────────────────────────────────
+const PANEL_W = 1024, PANEL_H = 256; // canvas pixels
+const PANEL_WORLD_W = 1.8, PANEL_WORLD_H = 0.45; // metres in VR world
+
+function createVRPanel() {
+  // Off-screen canvas we draw UI onto
+  vrPanelCanvas = document.createElement('canvas');
+  vrPanelCanvas.width  = PANEL_W;
+  vrPanelCanvas.height = PANEL_H;
+  vrPanelCtx = vrPanelCanvas.getContext('2d');
+
+  vrPanelTexture = new THREE.CanvasTexture(vrPanelCanvas);
+
+  const geo = new THREE.PlaneGeometry(PANEL_WORLD_W, PANEL_WORLD_H);
+  const mat = new THREE.MeshBasicMaterial({ map: vrPanelTexture, transparent: true, side: THREE.DoubleSide });
+  vrPanel = new THREE.Mesh(geo, mat);
+
+  // Float the panel in front of and slightly below the player
+  vrPanel.position.set(0, -0.5, -2.2);
+  vrPanel.visible = false; // hidden until VR starts
+  scene.add(vrPanel);
+
+  // Dot cursor for controller ray intersection
+  const curGeo = new THREE.SphereGeometry(0.012, 8, 8);
+  const curMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  vrCursor = new THREE.Mesh(curGeo, curMat);
+  vrCursor.visible = false;
+  scene.add(vrCursor);
+
+  drawVRPanel();
+}
+
+// ─── Draw the VR panel canvas ─────────────────────────────────────────────────
+function drawVRPanel() {
+  if (!vrPanelCtx || !video) return;
+  const ctx = vrPanelCtx;
+  const W = PANEL_W, H = PANEL_H;
+
+  // Background
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(10, 8, 20, 0.88)';
+  roundRect(ctx, 0, 0, W, H, 32);
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 2;
+  roundRect(ctx, 1, 1, W-2, H-2, 31);
+  ctx.stroke();
+
+  // Video title
+  ctx.fillStyle = '#e8e4f0';
+  ctx.font = '500 36px system-ui, sans-serif';
+  ctx.fillText(document.getElementById('video-title').textContent, 40, 62);
+
+  // Time
+  const timeStr = video ? (fmt(video.currentTime) + '  /  ' + fmt(video.duration || 0)) : '0:00 / 0:00';
+  ctx.fillStyle = '#9b93b8';
+  ctx.font = '400 28px system-ui, sans-serif';
+  ctx.fillText(timeStr, 40, 108);
+
+  // Scrubber track
+  const barX = 40, barY = 136, barW = W - 80, barH = 10;
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  roundRect(ctx, barX, barY, barW, barH, 5);
+  ctx.fill();
+
+  // Scrubber fill
+  const pct = (video && video.duration) ? video.currentTime / video.duration : 0;
+  ctx.fillStyle = '#8b5cf6';
+  roundRect(ctx, barX, barY, barW * pct, barH, 5);
+  ctx.fill();
+
+  // Buttons  — ◀◀  ▶/⏸  ▶▶  🔇/🔊
+  const btns = [
+    { label: '−10s', x: 40,  y: 175, w: 120, h: 52, id: 'seek-back' },
+    { label: video && !video.paused ? '⏸' : '▶', x: 180, y: 175, w: 120, h: 52, id: 'play'      },
+    { label: '+10s', x: 320, y: 175, w: 120, h: 52, id: 'seek-fwd'  },
+    { label: video && video.muted ? '🔇' : '🔊', x: 460, y: 175, w: 120, h: 52, id: 'mute'      },
+    { label: 'Exit VR', x: 864, y: 175, w: 120, h: 52, id: 'exit-vr' },
+  ];
+
+  btns.forEach(btn => {
+    ctx.fillStyle = btn.id === 'exit-vr' ? 'rgba(139,92,246,0.3)' : 'rgba(255,255,255,0.1)';
+    roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 12);
+    ctx.fill();
+    ctx.strokeStyle = btn.id === 'exit-vr' ? 'rgba(139,92,246,0.6)' : 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, btn.x, btn.y, btn.w, btn.h, 12);
+    ctx.stroke();
+    ctx.fillStyle = btn.id === 'exit-vr' ? '#c4b5fd' : '#e8e4f0';
+    ctx.font = '500 24px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2 + 9);
+    ctx.textAlign = 'left';
+  });
+
+  // Store button hit regions for raycasting
+  vrPanel.userData.buttons = btns;
+  vrPanelTexture.needsUpdate = true;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// ─── VR Controller setup ──────────────────────────────────────────────────────
+function setupControllers() {
+  for (let i = 0; i < 2; i++) {
+    const ctrl = renderer.xr.getController(i);
+    ctrl.addEventListener('selectstart', () => onVRSelect(ctrl));
+    scene.add(ctrl);
+
+    // Visible ray line from controller
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, 0, -1)
+    ]);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.4, transparent: true });
+    const line = new THREE.Line(lineGeo, lineMat);
+    line.scale.z = 5;
+    ctrl.add(line);
+    vrControllers.push(ctrl);
+  }
+}
+
+function onVRSelect(ctrl) {
+  if (!vrPanel || !vrPanel.visible) return;
+  const hit = getControllerPanelHit(ctrl);
+  if (!hit) return;
+
+  // Convert UV hit to canvas pixel coordinates
+  const u = hit.uv.x, v = 1 - hit.uv.y;
+  const px = u * PANEL_W, py = v * PANEL_H;
+
+  const buttons = vrPanel.userData.buttons || [];
+  for (const btn of buttons) {
+    if (px >= btn.x && px <= btn.x + btn.w && py >= btn.y && py <= btn.y + btn.h) {
+      handleVRButton(btn.id);
+      break;
+    }
+  }
+}
+
+function getControllerPanelHit(ctrl) {
+  const tempMatrix = new THREE.Matrix4();
+  tempMatrix.identity().extractRotation(ctrl.matrixWorld);
+  raycaster.ray.origin.setFromMatrixPosition(ctrl.matrixWorld);
+  raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
+  const hits = raycaster.intersectObject(vrPanel);
+  return hits.length > 0 ? hits[0] : null;
+}
+
+function handleVRButton(id) {
+  if (!video) return;
+  if (id === 'play')      { togglePlay(); }
+  if (id === 'seek-back') { video.currentTime = Math.max(0, video.currentTime - 10); }
+  if (id === 'seek-fwd')  { video.currentTime = Math.min(video.duration, video.currentTime + 10); }
+  if (id === 'mute')      { toggleMute(); }
+  if (id === 'exit-vr')   { if (xrSession) xrSession.end(); }
+  drawVRPanel();
+}
+
+// ─── Load video ────────────────────────────────────────────────────────────────
 function loadVideo(src, title) {
   document.getElementById('loader').classList.add('show');
   if (video) { video.pause(); video.src = ''; }
@@ -360,62 +383,59 @@ function loadVideo(src, title) {
     videoTexture = new THREE.VideoTexture(video);
     videoTexture.minFilter = THREE.LinearFilter;
     videoTexture.magFilter = THREE.LinearFilter;
-    videoTexture.format    = THREE.RGBFormat;
+    videoTexture.format = THREE.RGBFormat;
     createSphere(videoTexture);
 
+    const t = title || src.split('/').pop() || 'Untitled 360° Video';
+    document.getElementById('video-title').textContent = t;
     document.getElementById('drop-zone').style.display = 'none';
     document.getElementById('loader').classList.remove('show');
     document.getElementById('hud').style.display = 'flex';
 
-    const t = title || src.split('/').pop() || 'Untitled 360° Video';
-    document.getElementById('video-title').textContent = t;
-    document.getElementById('meta-title').textContent  = t;
+    if (!vrPanel) createVRPanel();
+    else drawVRPanel();
 
     video.play();
     updatePlayBtn();
     showHint('Drag to look around');
   });
 
-  video.addEventListener('timeupdate', updateScrubber);
-  video.addEventListener('ended', () => { document.getElementById('play-btn').textContent = '▶'; });
+  video.addEventListener('timeupdate', () => {
+    updateScrubber();
+    drawVRPanel();
+  });
+  video.addEventListener('ended', () => updatePlayBtn());
   video.addEventListener('error', () => {
     document.getElementById('loader').classList.remove('show');
-    alert('Could not load video. Make sure it\'s a valid video file and CORS allows it.');
+    alert('Could not load video. Check the URL and CORS permissions.');
   });
 }
 
-// ─── Controls ─────────────────────────────────────────────────────────────────
+// ─── Desktop controls ─────────────────────────────────────────────────────────
 function togglePlay() {
   if (!video) return;
   video.paused ? video.play() : video.pause();
   updatePlayBtn();
+  drawVRPanel();
 }
 function updatePlayBtn() {
-  document.getElementById('play-btn').textContent = video.paused ? '▶' : '⏸';
+  document.getElementById('play-btn').textContent = (video && !video.paused) ? '⏸' : '▶';
 }
-
-function setVolume(v) {
-  if (video) video.volume = v;
-}
+function setVolume(v) { if (video) video.volume = v; }
 function toggleMute() {
   if (!video) return;
   video.muted = !video.muted;
+  drawVRPanel();
 }
 function toggleFullscreen() {
   if (!document.fullscreenElement) document.documentElement.requestFullscreen();
   else document.exitFullscreen();
 }
-
 function scrubClick(e) {
   if (!video) return;
   const rect = e.currentTarget.getBoundingClientRect();
-  const pct  = (e.clientX - rect.left) / rect.width;
-  video.currentTime = pct * video.duration;
+  video.currentTime = ((e.clientX - rect.left) / rect.width) * video.duration;
 }
-function seekTo(t) {
-  if (video) video.currentTime = t;
-}
-
 function updateScrubber() {
   if (!video || !video.duration) return;
   const pct = (video.currentTime / video.duration) * 100;
@@ -423,32 +443,22 @@ function updateScrubber() {
   document.getElementById('time-display').textContent = fmt(video.currentTime) + ' / ' + fmt(video.duration);
 }
 function fmt(s) {
-  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
-  return m + ':' + String(sec).padStart(2,'0');
+  const m = Math.floor(s / 60);
+  return m + ':' + String(Math.floor(s % 60)).padStart(2, '0');
 }
-
-// ─── Panel ────────────────────────────────────────────────────────────────────
-function togglePanel() {
-  const p = document.getElementById('info-panel');
-  p.classList.toggle('open');
-  document.getElementById('info-toggle').classList.toggle('active');
-}
-
-// ─── File / URL loading ───────────────────────────────────────────────────────
 function openNewFile() { document.getElementById('file-input').click(); }
 
+// ─── File / URL ────────────────────────────────────────────────────────────────
 document.getElementById('file-input').addEventListener('change', e => {
   const f = e.target.files[0];
   if (f) loadVideo(URL.createObjectURL(f), f.name.replace(/\.[^.]+$/, ''));
 });
-
 function loadURL() {
   const u = document.getElementById('url-input').value.trim();
   if (u) loadVideo(u);
 }
 document.getElementById('url-input').addEventListener('keydown', e => { if (e.key === 'Enter') loadURL(); });
 
-// Drag-and-drop on the drop zone
 const dz = document.getElementById('drop-zone');
 dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
 dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
@@ -461,33 +471,56 @@ dz.addEventListener('drop', e => {
 // ─── WebXR ────────────────────────────────────────────────────────────────────
 async function enterVR() {
   if (!navigator.xr) return;
-  xrSession = await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] });
+  xrSession = await navigator.xr.requestSession('immersive-vr', {
+    optionalFeatures: ['local-floor', 'bounded-floor']
+  });
   renderer.xr.setSession(xrSession);
-  xrSession.addEventListener('end', () => { xrSession = null; });
+  setupControllers();
+
+  if (vrPanel) vrPanel.visible = true;
+
+  xrSession.addEventListener('end', () => {
+    xrSession = null;
+    vrControllers = [];
+    if (vrPanel) vrPanel.visible = false;
+  });
 }
 
-// ─── Hint toast ───────────────────────────────────────────────────────────────
+// ─── Render loop ─────────────────────────────────────────────────────────────
+function render() {
+  if (!renderer.xr.isPresenting) {
+    const euler = new THREE.Euler(
+      THREE.MathUtils.degToRad(pitch),
+      THREE.MathUtils.degToRad(yaw),
+      0, 'YXZ'
+    );
+    camera.quaternion.setFromEuler(euler);
+  }
+
+  // Update cursor position from first controller that hits the panel
+  if (renderer.xr.isPresenting && vrPanel && vrPanel.visible) {
+    let hitFound = false;
+    for (const ctrl of vrControllers) {
+      const hit = getControllerPanelHit(ctrl);
+      if (hit) {
+        vrCursor.position.copy(hit.point);
+        vrCursor.visible = true;
+        hitFound = true;
+        break;
+      }
+    }
+    if (!hitFound) vrCursor.visible = false;
+  }
+
+  if (videoTexture) videoTexture.needsUpdate = true;
+  renderer.render(scene, camera);
+}
+
+// ─── Hint toast ────────────────────────────────────────────────────────────────
 function showHint(msg) {
   const h = document.getElementById('hint');
   h.textContent = msg; h.classList.add('show');
   setTimeout(() => h.classList.remove('show'), 3000);
-}
-
-// ─── Render loop ─────────────────────────────────────────────────────────────
-function animate() {
-  renderer.setAnimationLoop(() => {
-    if (!renderer.xr.isPresenting) {
-      // Apply yaw + pitch as euler
-      const euler = new THREE.Euler(
-        THREE.MathUtils.degToRad(pitch),
-        THREE.MathUtils.degToRad(yaw),
-        0, 'YXZ'
-      );
-      camera.quaternion.setFromEuler(euler);
-    }
-    if (videoTexture) videoTexture.needsUpdate = true;
-    renderer.render(scene, camera);
-  });
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
