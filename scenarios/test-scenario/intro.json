@@ -6,11 +6,11 @@
       "choices": [
         {
           "label": "Call Joey",
-          "next": "Joey.json"
+          "next": "scenarios/test-scenario/Joey.json"
         },
         {
           "label": "Leave",
-          "next": "Leave.json"
+          "next": "scenarios/test-scenario/Leave.json"
         }
       ]
     }
