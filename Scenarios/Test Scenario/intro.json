@@ -1,6 +1,6 @@
 {
     "title": "Test Scenario",
-    "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/Test Video/Test video 0.mp4",
+    "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/Test%20Video/Test%20video%200.mp4",
     "decision": {
       "prompt": "What will you do?",
       "choices": [
