@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VR Branching Player</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; font-family: sans-serif; }
+    canvas { display: block; }
+
+    #overlay {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: #000;
+      color: #fff;
+      z-index: 10;
+      transition: opacity 0.4s;
+    }
+    #overlay.hidden { opacity: 0; pointer-events: none; }
+
+    #overlay h1 { font-size: 1.4rem; margin-bottom: 1.2rem; letter-spacing: 0.04em; color: #ccc; }
+    #overlay p  { font-size: 0.85rem; color: #666; margin-bottom: 2rem; max-width: 340px; text-align: center; }
+
+    #error-msg { color: #f55; font-size: 0.9rem; margin-bottom: 1rem; display: none; }
+
+    .btn {
+      background: #fff; color: #000;
+      border: none; border-radius: 6px;
+      padding: 0.65rem 1.6rem;
+      font-size: 0.95rem; font-weight: 600;
+      cursor: pointer; margin: 0.3rem;
+      transition: background 0.15s;
+    }
+    .btn:hover { background: #ddd; }
+    .btn.secondary { background: transparent; color: #888; border: 1px solid #333; }
+    .btn.secondary:hover { color: #fff; border-color: #666; }
+
+    #vr-btn { display: none; }
+
+    #loading-bar-wrap {
+      position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 20;
+      background: #111;
+    }
+    #loading-bar {
+      height: 100%; width: 0%; background: #fff;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading-bar-wrap"><div id="loading-bar"></div></div>
+
+<div id="overlay">
+  <h1 id="scene-title">Loading…</h1>
+  <p id="scene-desc">Fetching scenario…</p>
+  <div id="error-msg"></div>
+  <button id="play-btn"  class="btn" style="display:none">▶ Play</button>
+  <button id="vr-btn"   class="btn">Enter VR</button>
+  <button id="menu-btn" class="btn secondary" style="display:none">↩ Menu</button>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
+import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+
+/* ─────────────────────────────────────────────
+   CONSTANTS & CONFIG
+───────────────────────────────────────────── */
+const SPHERE_RADIUS    = 50;
+const PANEL_DISTANCE   = 3.5;   // metres in front of viewer
+const PANEL_HEIGHT     = -0.6;  // y offset (waist-ish)
+const PANEL_W          = 2.4;   // world-space width
+const PANEL_H_DECISION = 1.6;   // world-space height (decision mode)
+const PANEL_H_TRANSPORT= 0.55;  // transport bar height
+const CANVAS_W         = 1024;
+const CANVAS_H_DEC     = 682;
+const CANVAS_H_TRANS   = 234;
+
+const COLOURS = {
+  bg:       '#0d0d0d',
+  bgPanel:  '#141414',
+  border:   '#2a2a2a',
+  accent:   '#ffffff',
+  muted:    '#555555',
+  text:     '#e8e8e8',
+  subtext:  '#888888',
+  btnBg:    '#1e1e1e',
+  btnHover: '#2e2e2e',
+  btnPress: '#ffffff',
+  btnPressText: '#000000',
+  danger:   '#cc4444',
+  progress: '#ffffff',
+  progressBg:'#2a2a2a',
+};
+
+/* ─────────────────────────────────────────────
+   URL PARAMS
+───────────────────────────────────────────── */
+const params    = new URLSearchParams(location.search);
+const ROOT_JSON = params.get('scenario') || 'scenarios/demo/intro.json';
+const MENU_URL  = params.get('menu')     || null;
+
+/* ─────────────────────────────────────────────
+   STATE
+───────────────────────────────────────────── */
+const State = { BOOT:'boot', LOADING:'loading', PLAYING:'playing', DECISION:'decision', ENDED:'ended' };
+let appState    = State.BOOT;
+let currentJSON = null;     // parsed JSON for active scene
+let currentPath = null;     // path of active scene JSON
+
+/* ─────────────────────────────────────────────
+   THREE.JS SETUP
+───────────────────────────────────────────── */
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.xr.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+const scene  = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(75, innerWidth / innerHeight, 0.1, 200);
+scene.add(camera);
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ─────────────────────────────────────────────
+   360° SPHERE
+───────────────────────────────────────────── */
+const sphereGeo = new THREE.SphereGeometry(SPHERE_RADIUS, 64, 32);
+sphereGeo.scale(-1, 1, 1); // invert normals
+const sphereMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+const sphere    = new THREE.Mesh(sphereGeo, sphereMat);
+scene.add(sphere);
+
+/* ─────────────────────────────────────────────
+   VIDEO ELEMENT
+───────────────────────────────────────────── */
+const video = document.createElement('video');
+video.crossOrigin  = 'anonymous';
+video.loop         = false;
+video.muted        = false;
+video.playsInline  = true;
+video.preload      = 'auto';
+
+const videoTexture = new THREE.VideoTexture(video);
+videoTexture.colorSpace = THREE.SRGBColorSpace;
+
+/* ─────────────────────────────────────────────
+   LOOK CONTROLS (desktop fallback)
+───────────────────────────────────────────── */
+const euler  = new THREE.Euler(0, 0, 0, 'YXZ');
+let dragging = false, lastX = 0, lastY = 0;
+
+renderer.domElement.addEventListener('mousedown', e => { dragging = true; lastX = e.clientX; lastY = e.clientY; });
+window.addEventListener('mouseup',   ()  => { dragging = false; });
+window.addEventListener('mousemove', e  => {
+  if (!dragging) return;
+  const dx = (e.clientX - lastX) * 0.003;
+  const dy = (e.clientY - lastY) * 0.003;
+  lastX = e.clientX; lastY = e.clientY;
+  euler.y -= dx;
+  euler.x  = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x - dy));
+  camera.quaternion.setFromEuler(euler);
+});
+
+// Touch look
+let touchLast = null;
+renderer.domElement.addEventListener('touchstart', e => { const t = e.touches[0]; touchLast = {x:t.clientX, y:t.clientY}; }, { passive:true });
+renderer.domElement.addEventListener('touchmove', e => {
+  if (!touchLast) return;
+  const t  = e.touches[0];
+  const dx = (t.clientX - touchLast.x) * 0.003;
+  const dy = (t.clientY - touchLast.y) * 0.003;
+  touchLast = {x:t.clientX, y:t.clientY};
+  euler.y -= dx;
+  euler.x  = Math.max(-Math.PI/2, Math.min(Math.PI/2, euler.x - dy));
+  camera.quaternion.setFromEuler(euler);
+}, { passive:true });
+renderer.domElement.addEventListener('touchend', () => { touchLast = null; }, { passive:true });
+
+/* ─────────────────────────────────────────────
+   PANEL CANVAS UTILITIES
+───────────────────────────────────────────── */
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+/* ─────────────────────────────────────────────
+   PANEL MESH (shared, swaps canvas)
+───────────────────────────────────────────── */
+// We use two separate canvases: one for the decision panel, one for transport bar.
+// Only one panel mesh exists at a time; we rebuild it when switching modes.
+
+let panelMesh    = null;
+let panelCanvas  = null;
+let panelCtx     = null;
+let panelTex     = null;
+let panelButtons = [];   // [{ x, y, w, h, id, label, next }] in canvas coords
+
+function disposePanelMesh() {
+  if (panelMesh) {
+    scene.remove(panelMesh);
+    panelMesh.geometry.dispose();
+    panelMesh.material.dispose();
+    if (panelTex) panelTex.dispose();
+    panelMesh = null; panelTex = null;
+  }
+}
+
+function createPanel(worldW, worldH, canvasW, canvasH) {
+  disposePanelMesh();
+  panelCanvas = document.createElement('canvas');
+  panelCanvas.width  = canvasW;
+  panelCanvas.height = canvasH;
+  panelCtx = panelCanvas.getContext('2d');
+  panelTex = new THREE.CanvasTexture(panelCanvas);
+  panelTex.colorSpace = THREE.SRGBColorSpace;
+
+  const geo = new THREE.PlaneGeometry(worldW, worldH);
+  const mat = new THREE.MeshBasicMaterial({ map: panelTex, transparent: true, depthWrite: false });
+  panelMesh = new THREE.Mesh(geo, mat);
+  scene.add(panelMesh);
+}
+
+function positionPanel() {
+  if (!panelMesh) return;
+  // Place panel at fixed world-space direction (forward from scene origin)
+  // but always face camera
+  const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  dir.y = 0; // keep upright
+  dir.normalize();
+  const camPos = camera.getWorldPosition(new THREE.Vector3());
+  panelMesh.position.copy(camPos).addScaledVector(dir, PANEL_DISTANCE);
+  panelMesh.position.y += PANEL_HEIGHT;
+  panelMesh.lookAt(camPos);
+}
+
+/* ─────────────────────────────────────────────
+   DECISION PANEL DRAWING
+───────────────────────────────────────────── */
+let hoveredBtn = null;
+
+function drawDecisionPanel(sceneData, hovered = null) {
+  const ctx  = panelCtx;
+  const W    = CANVAS_W;
+  const H    = CANVAS_H_DEC;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = COLOURS.bg;
+  roundRect(ctx, 4, 4, W - 8, H - 8, 24);
+  ctx.fill();
+
+  // Border
+  ctx.strokeStyle = COLOURS.border;
+  ctx.lineWidth   = 1.5;
+  roundRect(ctx, 4, 4, W - 8, H - 8, 24);
+  ctx.stroke();
+
+  // Prompt text
+  const decision = sceneData.decision;
+  const prompt   = decision?.prompt || 'What happens next?';
+
+  ctx.fillStyle  = COLOURS.subtext;
+  ctx.font       = '500 22px system-ui, sans-serif';
+  ctx.textAlign  = 'center';
+  ctx.fillText('CHOOSE YOUR PATH', W / 2, 56);
+
+  ctx.fillStyle  = COLOURS.text;
+  ctx.font       = '500 38px system-ui, sans-serif';
+  ctx.fillText(prompt, W / 2, 112);
+
+  // Divider
+  ctx.strokeStyle = COLOURS.border;
+  ctx.lineWidth   = 1;
+  ctx.beginPath(); ctx.moveTo(60, 140); ctx.lineTo(W - 60, 140); ctx.stroke();
+
+  // Buttons
+  panelButtons = [];
+  const choices = decision?.choices || [];
+  const btnH    = 80;
+  const btnGap  = 16;
+  const btnX    = 60;
+  const btnW    = W - 120;
+  const startY  = 164;
+
+  choices.forEach((choice, i) => {
+    const by      = startY + i * (btnH + btnGap);
+    const isHover = hovered === i;
+    const bgCol   = isHover ? COLOURS.btnHover : COLOURS.btnBg;
+    const border  = isHover ? COLOURS.accent    : COLOURS.border;
+    const txt     = isHover ? COLOURS.accent     : COLOURS.text;
+
+    roundRect(ctx, btnX, by, btnW, btnH, 12);
+    ctx.fillStyle   = bgCol;   ctx.fill();
+    ctx.strokeStyle = border;  ctx.lineWidth = isHover ? 2 : 1; ctx.stroke();
+
+    // Arrow indicator
+    ctx.fillStyle  = isHover ? COLOURS.accent : COLOURS.muted;
+    ctx.font       = '500 24px system-ui, sans-serif';
+    ctx.textAlign  = 'right';
+    ctx.fillText('→', btnX + btnW - 24, by + btnH / 2 + 9);
+
+    // Label
+    ctx.fillStyle  = txt;
+    ctx.font       = `500 26px system-ui, sans-serif`;
+    ctx.textAlign  = 'left';
+    ctx.fillText(choice.label, btnX + 28, by + btnH / 2 + 9);
+
+    panelButtons.push({ x: btnX, y: by, w: btnW, h: btnH, id: i, label: choice.label, next: choice.next });
+  });
+
+  // Terminal (no decision) state
+  if (!decision) {
+    ctx.fillStyle = COLOURS.subtext;
+    ctx.font      = '400 26px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('— End of scenario —', W / 2, 200);
+
+    const replayY = 240, replayW = 340, replayH = 72;
+    const replayX = W / 2 - replayW / 2;
+    const isHover = hovered === 0;
+    roundRect(ctx, replayX, replayY, replayW, replayH, 12);
+    ctx.fillStyle   = isHover ? COLOURS.accent : COLOURS.btnBg; ctx.fill();
+    ctx.strokeStyle = isHover ? COLOURS.accent : COLOURS.border; ctx.lineWidth = isHover ? 2 : 1; ctx.stroke();
+    ctx.fillStyle   = isHover ? COLOURS.btnPressText : COLOURS.text;
+    ctx.font        = '500 26px system-ui, sans-serif';
+    ctx.textAlign   = 'center';
+    ctx.fillText('↺  Replay', W / 2, replayY + replayH / 2 + 9);
+    panelButtons.push({ x: replayX, y: replayY, w: replayW, h: replayH, id: 0, label: 'Replay', next: currentPath });
+
+    if (MENU_URL) {
+      const menuY = 330, menuW = 340, menuH = 72;
+      const menuX = W / 2 - menuW / 2;
+      const isH2  = hovered === 1;
+      roundRect(ctx, menuX, menuY, menuW, menuH, 12);
+      ctx.fillStyle   = isH2 ? COLOURS.accent : 'transparent'; ctx.fill();
+      ctx.strokeStyle = COLOURS.border; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle   = isH2 ? COLOURS.btnPressText : COLOURS.subtext;
+      ctx.font        = '500 24px system-ui, sans-serif';
+      ctx.textAlign   = 'center';
+      ctx.fillText('↩  Back to Menu', W / 2, menuY + menuH / 2 + 8);
+      panelButtons.push({ x: menuX, y: menuY, w: menuW, h: menuH, id: 1, label: 'Menu', next: MENU_URL });
+    }
+  }
+
+  panelTex.needsUpdate = true;
+}
+
+/* ─────────────────────────────────────────────
+   TRANSPORT BAR DRAWING
+───────────────────────────────────────────── */
+let transportButtons = [];
+let isMuted  = false;
+
+function drawTransportBar(hovered = null) {
+  if (!panelCtx) return;
+  const ctx = panelCtx;
+  const W   = CANVAS_W;
+  const H   = CANVAS_H_TRANS;
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = COLOURS.bg;
+  roundRect(ctx, 4, 4, W - 8, H - 8, 16);
+  ctx.fill();
+  ctx.strokeStyle = COLOURS.border; ctx.lineWidth = 1;
+  roundRect(ctx, 4, 4, W - 8, H - 8, 16);
+  ctx.stroke();
+
+  transportButtons = [];
+
+  // Progress bar
+  const pX  = 60, pY = 30, pW = W - 120, pH = 8;
+  ctx.fillStyle = COLOURS.progressBg;
+  roundRect(ctx, pX, pY, pW, pH, 4); ctx.fill();
+
+  const dur  = video.duration  || 1;
+  const cur  = video.currentTime || 0;
+  const prog = Math.min(cur / dur, 1);
+  if (prog > 0) {
+    ctx.fillStyle = COLOURS.progress;
+    roundRect(ctx, pX, pY, pW * prog, pH, 4); ctx.fill();
+  }
+
+  // Scrubber knob
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(pX + pW * prog, pY + pH / 2, 8, 0, Math.PI * 2); ctx.fill();
+  transportButtons.push({ x: pX - 8, y: pY - 10, w: pW + 16, h: pH + 20, id: 'seek', label: 'seek' });
+
+  // Time label
+  const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+  ctx.fillStyle = COLOURS.subtext; ctx.font = '400 20px system-ui, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillText(`${fmt(cur)} / ${fmt(dur)}`, pX, 78);
+
+  // Buttons: Play/Pause | Mute | ── spacer ──
+  const BTN_W = 72, BTN_H = 54, BTN_Y = 96;
+
+  const btns = [
+    { id: 'playpause', label: video.paused ? '▶' : '⏸', x: 60 },
+    { id: 'mute',      label: isMuted ? '🔇' : '🔊',    x: 148 },
+  ];
+
+  btns.forEach(b => {
+    const isH = hovered === b.id;
+    roundRect(ctx, b.x, BTN_Y, BTN_W, BTN_H, 10);
+    ctx.fillStyle   = isH ? COLOURS.btnHover : COLOURS.btnBg; ctx.fill();
+    ctx.strokeStyle = isH ? COLOURS.accent : COLOURS.border; ctx.lineWidth = isH ? 2 : 1; ctx.stroke();
+    ctx.fillStyle   = COLOURS.text; ctx.font = '22px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(b.label, b.x + BTN_W / 2, BTN_Y + BTN_H / 2 + 8);
+    transportButtons.push({ x: b.x, y: BTN_Y, w: BTN_W, h: BTN_H, id: b.id, label: b.label });
+  });
+
+  panelTex.needsUpdate = true;
+}
+
+/* ─────────────────────────────────────────────
+   RAYCASTER + INTERACTION
+───────────────────────────────────────────── */
+const raycaster = new THREE.Raycaster();
+const mouse2D   = new THREE.Vector2();
+
+// Map a raycaster hit on the panel plane to canvas UV coords
+function hitToButtonIndex(uv, buttonList) {
+  const cx = uv.x * panelCanvas.width;
+  const cy = (1 - uv.y) * panelCanvas.height;
+  for (let i = 0; i < buttonList.length; i++) {
+    const b = buttonList[i];
+    if (cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h) return i;
+  }
+  return -1;
+}
+
+function getHitUV() {
+  if (!panelMesh) return null;
+  const hits = raycaster.intersectObject(panelMesh);
+  if (!hits.length) return null;
+  return hits[0].uv;
+}
+
+// Desktop mouse interaction
+renderer.domElement.addEventListener('mousemove', e => {
+  mouse2D.x =  (e.clientX / innerWidth)  * 2 - 1;
+  mouse2D.y = -(e.clientY / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse2D, camera);
+  const uv = getHitUV();
+  if (!uv) { hoveredBtn = null; redrawPanel(); return; }
+  const activeButtons = appState === State.DECISION ? panelButtons : transportButtons;
+  const idx = hitToButtonIndex(uv, activeButtons);
+  const id  = idx >= 0 ? (appState === State.DECISION ? idx : activeButtons[idx].id) : null;
+  if (id !== hoveredBtn) { hoveredBtn = id; redrawPanel(); }
+});
+
+renderer.domElement.addEventListener('click', e => {
+  mouse2D.x =  (e.clientX / innerWidth)  * 2 - 1;
+  mouse2D.y = -(e.clientY / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse2D, camera);
+  handlePanelClick();
+});
+
+function handlePanelClick() {
+  const uv = getHitUV();
+  if (!uv) return;
+  if (appState === State.DECISION) {
+    const idx = hitToButtonIndex(uv, panelButtons);
+    if (idx < 0) return;
+    const btn = panelButtons[idx];
+    onChoiceSelected(btn);
+  } else if (appState === State.PLAYING) {
+    const idx = hitToButtonIndex(uv, transportButtons);
+    if (idx < 0) return;
+    const btn = transportButtons[idx];
+    onTransportAction(btn, uv);
+  }
+}
+
+function onChoiceSelected(btn) {
+  if (btn.label === 'Menu' && MENU_URL) {
+    location.href = MENU_URL;
+    return;
+  }
+  loadScene(btn.next);
+}
+
+function onTransportAction(btn, uv) {
+  if (btn.id === 'playpause') {
+    video.paused ? video.play() : video.pause();
+  } else if (btn.id === 'mute') {
+    isMuted = !isMuted; video.muted = isMuted;
+  } else if (btn.id === 'seek') {
+    // Map UV x within the progress bar range
+    const cx  = uv.x * panelCanvas.width;
+    const pX  = 60, pW = panelCanvas.width - 120;
+    const t   = Math.max(0, Math.min(1, (cx - pX) / pW));
+    video.currentTime = t * (video.duration || 0);
+  }
+  redrawPanel();
+}
+
+function redrawPanel() {
+  if (!panelCtx) return;
+  if (appState === State.DECISION || appState === State.ENDED) {
+    drawDecisionPanel(currentJSON, hoveredBtn);
+  } else if (appState === State.PLAYING) {
+    drawTransportBar(hoveredBtn);
+  }
+}
+
+/* ─────────────────────────────────────────────
+   VR CONTROLLERS
+───────────────────────────────────────────── */
+const controllerModelFactory = new XRControllerModelFactory();
+const controllerLines        = [];
+
+[0, 1].forEach(i => {
+  const ctrl = renderer.xr.getController(i);
+  const ray  = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.002, 0.002, 5, 8),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, opacity: 0.4, transparent: true })
+  );
+  ray.rotation.x = -Math.PI / 2;
+  ray.position.z = -2.5;
+  ctrl.add(ray);
+  controllerLines.push({ ctrl, ray });
+
+  const grip = renderer.xr.getControllerGrip(i);
+  grip.add(controllerModelFactory.createControllerModel(grip));
+  scene.add(ctrl); scene.add(grip);
+
+  ctrl.addEventListener('selectstart', () => {
+    if (!panelMesh) return;
+    const mat = new THREE.Matrix4().extractRotation(ctrl.matrixWorld);
+    const dir = new THREE.Vector3(0, 0, -1).applyMatrix4(mat);
+    const pos = new THREE.Vector3().setFromMatrixPosition(ctrl.matrixWorld);
+    raycaster.set(pos, dir);
+    handlePanelClick();
+  });
+});
+
+/* VR controller hover (runs in render loop) */
+function updateVRHover() {
+  if (!renderer.xr.isPresenting || !panelMesh) return;
+  let found = null;
+  for (const { ctrl } of controllerLines) {
+    const mat = new THREE.Matrix4().extractRotation(ctrl.matrixWorld);
+    const dir = new THREE.Vector3(0, 0, -1).applyMatrix4(mat);
+    const pos = new THREE.Vector3().setFromMatrixPosition(ctrl.matrixWorld);
+    raycaster.set(pos, dir);
+    const uv = getHitUV();
+    if (!uv) continue;
+    const activeButtons = appState === State.DECISION ? panelButtons : transportButtons;
+    const idx = hitToButtonIndex(uv, activeButtons);
+    if (idx >= 0) { found = appState === State.DECISION ? idx : activeButtons[idx].id; break; }
+  }
+  if (found !== hoveredBtn) { hoveredBtn = found; redrawPanel(); }
+}
+
+/* ─────────────────────────────────────────────
+   ENTER VR BUTTON
+───────────────────────────────────────────── */
+const vrBtnEl = document.getElementById('vr-btn');
+if (navigator.xr) {
+  navigator.xr.isSessionSupported('immersive-vr').then(supported => {
+    if (supported) vrBtnEl.style.display = 'inline-block';
+  });
+}
+vrBtnEl.addEventListener('click', () => {
+  if (renderer.xr.isPresenting) return;
+  navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] })
+    .then(session => { renderer.xr.setSession(session); hideOverlay(); });
+});
+
+/* ─────────────────────────────────────────────
+   OVERLAY HELPERS
+───────────────────────────────────────────── */
+const overlay   = document.getElementById('overlay');
+const titleEl   = document.getElementById('scene-title');
+const descEl    = document.getElementById('scene-desc');
+const errorEl   = document.getElementById('error-msg');
+const playBtnEl = document.getElementById('play-btn');
+const menuBtnEl = document.getElementById('menu-btn');
+const loadBar   = document.getElementById('loading-bar');
+
+function showOverlay(title, desc) {
+  titleEl.textContent = title;
+  descEl.textContent  = desc;
+  overlay.classList.remove('hidden');
+}
+function hideOverlay() { overlay.classList.add('hidden'); }
+function setLoadProgress(p) { loadBar.style.width = `${p * 100}%`; }
+
+playBtnEl.addEventListener('click', () => { video.play(); hideOverlay(); });
+menuBtnEl.addEventListener('click', () => { if (MENU_URL) location.href = MENU_URL; });
+
+/* ─────────────────────────────────────────────
+   SCENE LOADER
+───────────────────────────────────────────── */
+async function loadScene(jsonPath) {
+  appState = State.LOADING;
+  hoveredBtn = null;
+  disposePanelMesh();
+  setLoadProgress(0.1);
+
+  // Stop old video
+  video.pause();
+  video.src = '';
+  sphereMat.map = null;
+  sphereMat.needsUpdate = true;
+
+  showOverlay('Loading…', jsonPath);
+  playBtnEl.style.display = 'none';
+  menuBtnEl.style.display = 'none';
+  errorEl.style.display   = 'none';
+  vrBtnEl.style.display   = 'none';
+
+  // 1. Fetch JSON
+  let sceneData;
+  try {
+    const res = await fetch(jsonPath);
+    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${jsonPath}`);
+    sceneData = await res.json();
+  } catch (e) {
+    showError(`Failed to load scene: ${e.message}`);
+    return;
+  }
+  currentJSON = sceneData;
+  currentPath = jsonPath;
+
+  setLoadProgress(0.3);
+  titleEl.textContent = sceneData.title || 'Scene';
+  descEl.textContent  = 'Loading video…';
+
+  // 2. Derive video path relative to JSON location
+  const base      = jsonPath.substring(0, jsonPath.lastIndexOf('/') + 1);
+  const videoSrc  = sceneData.video.startsWith('http') ? sceneData.video : base + sceneData.video;
+
+  // 3. Load video
+  await new Promise((resolve, reject) => {
+    video.src = videoSrc;
+    video.load();
+    video.addEventListener('canplay', resolve, { once: true });
+    video.addEventListener('error',   () => reject(new Error(`Cannot load video: ${videoSrc}`)), { once: true });
+    setTimeout(() => reject(new Error('Video load timeout')), 30000);
+  }).catch(e => { showError(e.message); throw e; });
+
+  setLoadProgress(0.9);
+
+  // Apply video texture to sphere
+  videoTexture.image = video;
+  videoTexture.needsUpdate = true;
+  sphereMat.map = videoTexture;
+  sphereMat.needsUpdate = true;
+
+  setLoadProgress(1);
+
+  // 4. Show play prompt (desktop) or just play
+  if (renderer.xr.isPresenting) {
+    hideOverlay();
+    video.play().catch(() => {});
+    transitionToPlaying();
+  } else {
+    showOverlay(sceneData.title || 'Scene', 'Press Play to begin.');
+    playBtnEl.style.display = 'inline-block';
+    if (navigator.xr) {
+      navigator.xr.isSessionSupported('immersive-vr').then(s => { if (s) vrBtnEl.style.display = 'inline-block'; });
+    }
+    if (MENU_URL) menuBtnEl.style.display = 'inline-block';
+
+    playBtnEl.onclick = () => {
+      video.play().then(() => { hideOverlay(); transitionToPlaying(); }).catch(() => {});
+    };
+  }
+
+  setTimeout(() => { loadBar.style.width = '0%'; }, 600);
+}
+
+function transitionToPlaying() {
+  appState = State.PLAYING;
+  // Build transport bar panel
+  createPanel(PANEL_W, PANEL_H_TRANSPORT, CANVAS_W, CANVAS_H_TRANS);
+  positionPanel();
+  drawTransportBar();
+}
+
+function transitionToDecision() {
+  appState = State.DECISION;
+  // Rebuild panel for decision layout
+  createPanel(PANEL_W, PANEL_H_DECISION, CANVAS_W, CANVAS_H_DEC);
+  positionPanel();
+  drawDecisionPanel(currentJSON, null);
+}
+
+/* Video ended → show decision */
+video.addEventListener('ended', () => {
+  transitionToDecision();
+});
+
+function showError(msg) {
+  appState = State.BOOT;
+  titleEl.textContent     = 'Error';
+  descEl.textContent      = '';
+  errorEl.textContent     = msg;
+  errorEl.style.display   = 'block';
+  overlay.classList.remove('hidden');
+  if (MENU_URL) menuBtnEl.style.display = 'inline-block';
+  console.error('[VRPlayer]', msg);
+}
+
+/* ─────────────────────────────────────────────
+   RENDER LOOP
+───────────────────────────────────────────── */
+let lastTransportUpdate = 0;
+renderer.setAnimationLoop((time) => {
+  updateVRHover();
+
+  // Keep panel facing camera
+  if (panelMesh) positionPanel();
+
+  // Update transport bar every ~250 ms while playing
+  if (appState === State.PLAYING && time - lastTransportUpdate > 250) {
+    lastTransportUpdate = time;
+    drawTransportBar(hoveredBtn);
+  }
+
+  renderer.render(scene, camera);
+});
+
+/* ─────────────────────────────────────────────
+   BOOT
+───────────────────────────────────────────── */
+loadScene(ROOT_JSON);
+</script>
+</body>
+</html>
