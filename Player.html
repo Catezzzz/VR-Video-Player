@@ -37,7 +37,14 @@
     .btn.secondary { background: transparent; color: #888; border: 1px solid #333; }
     .btn.secondary:hover { color: #fff; border-color: #666; }
 
-    #vr-btn { display: none; }
+    #vr-btn {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 15;
+    }
 
     #loading-bar-wrap {
       position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 20;
@@ -57,11 +64,12 @@
   <h1 id="scene-title">Loading…</h1>
   <p id="scene-desc">Fetching scenario…</p>
   <div id="error-msg"></div>
-  <button id="play-btn"  class="btn" style="display:none">▶ Play</button>
-  <button id="vr-btn"   class="btn">Enter VR</button>
+  <button id="play-btn" class="btn" style="display:none">▶ Play</button>
   <button id="menu-btn" class="btn secondary" style="display:none">↩ Menu</button>
 </div>
 
+
+<button id="vr-btn" class="btn">Enter VR</button>
 <script type="importmap">
 {
   "imports": {
@@ -145,7 +153,7 @@ window.addEventListener('resize', () => {
 ───────────────────────────────────────────── */
 const sphereGeo = new THREE.SphereGeometry(SPHERE_RADIUS, 64, 32);
 sphereGeo.scale(-1, 1, 1); // invert normals
-const sphereMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+const sphereMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 const sphere    = new THREE.Mesh(sphereGeo, sphereMat);
 scene.add(sphere);
 
@@ -161,6 +169,7 @@ video.preload      = 'auto';
 
 const videoTexture = new THREE.VideoTexture(video);
 videoTexture.colorSpace = THREE.SRGBColorSpace;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 /* ─────────────────────────────────────────────
    LOOK CONTROLS (desktop fallback)
@@ -594,7 +603,14 @@ if (navigator.xr) {
 vrBtnEl.addEventListener('click', () => {
   if (renderer.xr.isPresenting) return;
   navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] })
-    .then(session => { renderer.xr.setSession(session); hideOverlay(); });
+    .then(session => {
+      renderer.xr.setSession(session);
+      hideOverlay();
+      if (appState === State.LOADING || video.readyState >= 3) {
+        video.play().catch(() => {});
+        transitionToPlaying();
+      }
+    });
 });
 
 /* ─────────────────────────────────────────────
@@ -694,8 +710,12 @@ async function loadScene(jsonPath) {
     if (MENU_URL) menuBtnEl.style.display = 'inline-block';
 
     playBtnEl.onclick = () => {
-      video.play().then(() => { hideOverlay(); transitionToPlaying(); }).catch(() => {});
-    };
+    video.play().then(() => {
+    hideOverlay();
+    transitionToPlaying();
+    vrBtnEl.style.display = 'inline-block'; // keep VR button visible
+  }).catch(() => {});
+};
   }
 
   setTimeout(() => { loadBar.style.width = '0%'; }, 600);
