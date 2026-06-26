@@ -10,7 +10,7 @@
         },
         {
           "label": "Leave",
-          "next": "scenarios/test-scenario/Leave.json"
+          "next": "scenarios/test-scenario/Leaveee.json"
         }
       ]
     }
