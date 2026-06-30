@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Scenario Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:        #0a0a0a;
+    --card-bg:   #121212;
+    --border:    #242424;
+    --border-hi: #f5f5f5;
+    --text:      #ededed;
+    --subtext:   #7c7c7c;
+    --accent:    #f5f5f5;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── header ───────────────────────────────────── */
+  header {
+    padding: 56px 8vw 28px;
+    position: relative;
+  }
+  .sprockets {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+  .sprockets span {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+  header h1 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    letter-spacing: -0.01em;
+  }
+  header p {
+    margin-top: 10px;
+    color: var(--subtext);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  header .rule {
+    margin-top: 28px;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── grid ─────────────────────────────────────── */
+  main {
+    padding: 36px 8vw 80px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+    max-width: 1040px;
+  }
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .card:hover {
+    border-color: var(--border-hi);
+    transform: translateY(-3px);
+  }
+  .card:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .thumb-wrap {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background: linear-gradient(135deg, #1c1c1c, #0a0a0a);
+    overflow: hidden;
+  }
+  .thumb-wrap img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+    filter: brightness(0.82) saturate(0.95);
+    transition: filter 0.25s ease, transform 0.4s ease;
+  }
+  .card:hover .thumb-wrap img {
+    filter: brightness(1);
+    transform: scale(1.035);
+  }
+  .thumb-wrap.placeholder::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      repeating-linear-gradient(135deg, transparent 0 18px, rgba(255,255,255,0.025) 18px 19px);
+  }
+  .thumb-fallback-icon {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #333;
+    font-size: 2rem;
+  }
+
+  .play-glyph {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+  }
+  .card:hover .play-glyph { opacity: 1; }
+  .play-glyph svg { filter: drop-shadow(0 2px 10px rgba(0,0,0,0.6)); }
+
+  .card-title {
+    padding: 14px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .card-title span.label {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--text);
+  }
+  .card:hover .card-title span.label { color: var(--accent); }
+  .card-title span.arrow {
+    color: var(--subtext);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    transition: transform 0.2s ease, color 0.2s ease;
+  }
+  .card:hover .card-title span.arrow {
+    color: var(--accent);
+    transform: translateX(3px);
+  }
+
+  /* ── empty / error states ────────────────────── */
+  .state-msg {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--subtext);
+    font-size: 0.85rem;
+    padding: 40px 0;
+    max-width: 480px;
+    line-height: 1.6;
+  }
+  .state-msg strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="sprockets">
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+  <h1>Scenario Library</h1>
+  <p>Select a branching scenario to begin</p>
+  <div class="rule"></div>
+</header>
+
+<main>
+  <div id="grid" class="grid"></div>
+  <div id="state" class="state-msg" style="display:none;"></div>
+</main>
+
+<script>
+  // Path to the manifest listing all available scenarios.
+  const MANIFEST_URL = 'scenarios/scenarios.json';
+  // Path to the player engine; each card links here with its intro JSON.
+  const PLAYER_URL   = 'Player.html';
+
+  const gridEl  = document.getElementById('grid');
+  const stateEl = document.getElementById('state');
+
+  function showState(html) {
+    gridEl.style.display = 'none';
+    stateEl.style.display = 'block';
+    stateEl.innerHTML = html;
+  }
+
+  function playGlyphSVG() {
+    return `<svg width="44" height="44" viewBox="0 0 44 44">
+      <circle cx="22" cy="22" r="21" fill="rgba(0,0,0,0.45)" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+      <path d="M18 14L31 22L18 30Z" fill="#f5f5f5"/>
+    </svg>`;
+  }
+
+  function fallbackIconSVG() {
+    return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+      <rect x="2" y="4" width="20" height="14" rx="2"/>
+      <circle cx="8" cy="10" r="1.6"/>
+      <path d="M2 16l5.5-4.5L12 14l4-3L22 15"/>
+    </svg>`;
+  }
+
+  function buildCard(entry) {
+    const a = document.createElement('a');
+    a.className = 'card';
+    a.href = `${PLAYER_URL}?scenario=${encodeURIComponent(entry.intro)}&menu=${encodeURIComponent(location.pathname.split('/').pop() || 'Menu.html')}`;
+
+    const thumbWrap = document.createElement('div');
+    thumbWrap.className = 'thumb-wrap placeholder';
+
+    if (entry.thumbnail) {
+      const img = document.createElement('img');
+      img.src = entry.thumbnail;
+      img.alt = entry.title || entry.id;
+      img.loading = 'lazy';
+      img.onerror = () => {
+        img.remove();
+        const fb = document.createElement('div');
+        fb.className = 'thumb-fallback-icon';
+        fb.innerHTML = fallbackIconSVG();
+        thumbWrap.appendChild(fb);
+      };
+      thumbWrap.appendChild(img);
+    } else {
+      const fb = document.createElement('div');
+      fb.className = 'thumb-fallback-icon';
+      fb.innerHTML = fallbackIconSVG();
+      thumbWrap.appendChild(fb);
+    }
+
+    const playGlyph = document.createElement('div');
+    playGlyph.className = 'play-glyph';
+    playGlyph.innerHTML = playGlyphSVG();
+    thumbWrap.appendChild(playGlyph);
+
+    const titleBar = document.createElement('div');
+    titleBar.className = 'card-title';
+    titleBar.innerHTML = `<span class="label">${entry.title || entry.id}</span><span class="arrow">ENTER →</span>`;
+
+    a.appendChild(thumbWrap);
+    a.appendChild(titleBar);
+    return a;
+  }
+
+  fetch(MANIFEST_URL)
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${MANIFEST_URL}`);
+      return res.json();
+    })
+    .then(list => {
+      if (!Array.isArray(list) || list.length === 0) {
+        showState(`<strong>No scenarios found.</strong><br>Add entries to <code>${MANIFEST_URL}</code> to populate this library.`);
+        return;
+      }
+      list.forEach(entry => gridEl.appendChild(buildCard(entry)));
+    })
+    .catch(err => {
+      showState(`<strong>Couldn't load the scenario library.</strong><br>${err.message}<br><br>Check that <code>${MANIFEST_URL}</code> exists and is valid JSON.`);
+      console.error('[Menu]', err);
+    });
+</script>
+
+</body>
+</html>

@@ -54,6 +54,18 @@
       height: 100%; width: 0%; background: #fff;
       transition: width 0.3s ease;
     }
+
+    #version-txt {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      color: #555;
+      letter-spacing: 0.03em;
+      text-align: center;
+      width: 90%;
+    }
   </style>
 </head>
 <body>
@@ -66,6 +78,7 @@
   <div id="error-msg"></div>
   <button id="play-btn" class="btn" style="display:none">▶ Play</button>
   <button id="menu-btn" class="btn secondary" style="display:none">↩ Menu</button>
+  <p id="version-txt"></p>
 </div>
 
 
@@ -87,6 +100,7 @@ import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFa
 /* ─────────────────────────────────────────────
    CONSTANTS & CONFIG
 ───────────────────────────────────────────── */
+const VERSION = '0.2';
 const SPHERE_RADIUS = 50;
 
 // Transport bar config
@@ -137,7 +151,7 @@ const COLOURS = {
 ───────────────────────────────────────────── */
 const params    = new URLSearchParams(location.search);
 const ROOT_JSON = params.get('scenario') || 'scenarios/test-scenario/intro.json';
-const MENU_URL  = params.get('menu')     || null;
+const MENU_URL  = params.get('menu')     || 'menu.html';
 
 /* ─────────────────────────────────────────────
    STATE
@@ -146,6 +160,8 @@ const State = { BOOT:'boot', LOADING:'loading', PLAYING:'playing', DECISION:'dec
 let appState    = State.BOOT;
 let currentJSON = null;     // parsed JSON for active scene
 let currentPath = null;     // path of active scene JSON
+let introPath = null;
+
 
 // Track whether pointer is over the panel at all (for opacity)
 let isPanelHovered = false;
@@ -343,18 +359,7 @@ function drawDecisionPanel(sceneData, hovered = null) {
   ctx.lineWidth   = 1;
   ctx.beginPath(); ctx.moveTo(60, 140); ctx.lineTo(W - 60, 140); ctx.stroke();
 
-  // // Replay Button
-  // const replayY = 240, replayW = 340, replayH = 72;
-  //   const replayX = W / 2 - replayW / 2;
-  //   const isHover = hovered === 0;
-  //   roundRect(ctx, replayX, replayY, replayW, replayH, 12);
-  //   ctx.fillStyle   = isHover ? COLOURS.accent : COLOURS.btnBg; ctx.fill();
-  //   ctx.strokeStyle = isHover ? COLOURS.accent : COLOURS.border; ctx.lineWidth = isHover ? 2 : 1; ctx.stroke();
-  //   ctx.fillStyle   = isHover ? COLOURS.btnPressText : COLOURS.text;
-  //   ctx.font        = '500 26px system-ui, sans-serif';
-  //   ctx.textAlign   = 'center';
-  //   ctx.fillText('↺  Replay', W / 2, replayY + replayH / 2 + 9);
-  //   panelButtons.push({ x: replayX, y: replayY, w: replayW, h: replayH, id: 0, label: 'Replay', next: currentPath });
+
 
   // Buttons
   panelButtons = [];
@@ -389,6 +394,7 @@ function drawDecisionPanel(sceneData, hovered = null) {
     ctx.fillText(choice.label, btnX + 28, by + btnH / 2 + 9);
 
     panelButtons.push({ x: btnX, y: by, w: btnW, h: btnH, id: i, label: choice.label, next: choice.next });
+    
   });
 
   // Terminal (no decision) state
@@ -408,7 +414,24 @@ function drawDecisionPanel(sceneData, hovered = null) {
     ctx.font        = '500 26px system-ui, sans-serif';
     ctx.textAlign   = 'center';
     ctx.fillText('↺  Replay', W / 2, replayY + replayH / 2 + 9);
-    panelButtons.push({ x: replayX, y: replayY, w: replayW, h: replayH, id: 0, label: 'Replay', next: currentPath });
+    panelButtons.push({ x: replayX, y: replayY, w: replayW, h: replayH, id: 0, label: 'Replay', next: introPath });
+    console.log('[currentPath]', currentPath);
+
+
+    //Add Menu button
+
+    const menuY = 330, menuW = 340, menuH = 72;
+    const menuX = W / 2 - menuW / 2;
+    const isH2  = hovered === 1;
+    roundRect(ctx, menuX, menuY, menuW, menuH, 12);
+    ctx.fillStyle   = isH2 ? COLOURS.accent : 'transparent'; ctx.fill();
+    ctx.strokeStyle = COLOURS.border; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle   = isH2 ? COLOURS.btnPressText : COLOURS.subtext;
+    ctx.font        = '500 24px system-ui, sans-serif';
+    ctx.textAlign   = 'center';
+    ctx.fillText('↩  Back to Menu', W / 2, menuY + menuH / 2 + 8);
+    panelButtons.push({ x: menuX, y: menuY, w: menuW, h: menuH, id: 1, label: 'Menu', next: MENU_URL });
+
 
     if (MENU_URL) {
       const menuY = 330, menuW = 340, menuH = 72;
@@ -694,6 +717,9 @@ const errorEl   = document.getElementById('error-msg');
 const playBtnEl = document.getElementById('play-btn');
 const menuBtnEl = document.getElementById('menu-btn');
 const loadBar   = document.getElementById('loading-bar');
+const footerEl = document.getElementById('version-txt');
+
+footerEl.textContent = VERSION;
 
 function showOverlay(title, desc) {
   titleEl.textContent = title;
@@ -740,6 +766,8 @@ async function loadScene(jsonPath) {
   }
   currentJSON = sceneData;
   currentPath = jsonPath;
+  introPath = currentPath.substring(0, currentPath.lastIndexOf("/"))+"/intro.json";
+  console.log('[currentPath]', currentPath);
 
   setLoadProgress(0.3);
   titleEl.textContent = sceneData.title || 'Scene';
