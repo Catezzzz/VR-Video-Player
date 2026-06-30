@@ -87,15 +87,33 @@ import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFa
 /* ─────────────────────────────────────────────
    CONSTANTS & CONFIG
 ───────────────────────────────────────────── */
-const SPHERE_RADIUS    = 50;
-const PANEL_DISTANCE   = 3.5;   // metres in front of viewer
-const PANEL_HEIGHT     = -0.9;  // y offset (waist-ish)
-const PANEL_W          = 2.4;   // world-space width
-const PANEL_H_DECISION = 1.6;   // world-space height (decision mode)
-const PANEL_H_TRANSPORT= 0.55;  // transport bar height
-const CANVAS_W         = 1024;
-const CANVAS_H_DEC     = 682;
-const CANVAS_H_TRANS   = 234;
+const SPHERE_RADIUS = 50;
+
+// Transport bar config
+const TRANSPORT = {
+  distance:  3.5,    // metres in front of viewer
+  height:   -2.1,    // y offset in world space
+  worldW:    5.5,    // world-space width
+  worldH:    0.6,   // world-space height
+  canvasW:   2048,   // canvas pixel width
+  canvasH:   234,    // canvas pixel height
+  padX:      60,     // left/right margin inside canvas
+  padY:      30,     // top margin for progress bar
+};
+
+// Decision panel config
+const DECISION = {
+  distance:  3.5,
+  height:   -0.3,
+  worldW:    2.4,
+  worldH:    1.6,
+  canvasW:   1024,
+  canvasH:   682,
+};
+
+// Opacity levels for transport bar
+const TRANSPORT_OPACITY_IDLE   = 0.18;  // when not hovered
+const TRANSPORT_OPACITY_ACTIVE = 1.0;   // when hovered
 
 const COLOURS = {
   bg:       '#0d0d0d',
@@ -128,6 +146,9 @@ const State = { BOOT:'boot', LOADING:'loading', PLAYING:'playing', DECISION:'dec
 let appState    = State.BOOT;
 let currentJSON = null;     // parsed JSON for active scene
 let currentPath = null;     // path of active scene JSON
+
+// Track whether pointer is over the panel at all (for opacity)
+let isPanelHovered = false;
 
 /* ─────────────────────────────────────────────
    THREE.JS SETUP
@@ -224,9 +245,6 @@ function roundRect(ctx, x, y, w, h, r) {
 /* ─────────────────────────────────────────────
    PANEL MESH (shared, swaps canvas)
 ───────────────────────────────────────────── */
-// We use two separate canvases: one for the decision panel, one for transport bar.
-// Only one panel mesh exists at a time; we rebuild it when switching modes.
-
 let panelMesh    = null;
 let panelCanvas  = null;
 let panelCtx     = null;
@@ -260,15 +278,29 @@ function createPanel(worldW, worldH, canvasW, canvasH) {
 
 function positionPanel() {
   if (!panelMesh) return;
-  // Place panel at fixed world-space direction (forward from scene origin)
-  // but always face camera
+  const cfg = appState === State.PLAYING ? TRANSPORT : DECISION;
   const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-  dir.y = 0; // keep upright
+  dir.y = 0;
   dir.normalize();
   const camPos = camera.getWorldPosition(new THREE.Vector3());
-  panelMesh.position.copy(camPos).addScaledVector(dir, PANEL_DISTANCE);
-  panelMesh.position.y += PANEL_HEIGHT;
+  panelMesh.position.copy(camPos).addScaledVector(dir, cfg.distance);
+  panelMesh.position.y += cfg.height;
   panelMesh.lookAt(camPos);
+}
+
+/* Update panel mesh opacity based on hover state (transport bar only) */
+function updatePanelOpacity() {
+  if (!panelMesh) return;
+  if (appState === State.PLAYING) {
+    const target = isPanelHovered ? TRANSPORT_OPACITY_ACTIVE : TRANSPORT_OPACITY_IDLE;
+    // Smooth lerp toward target opacity
+    const current = panelMesh.material.opacity;
+    const next = current + (target - current) * 0.12;
+    panelMesh.material.opacity = next;
+  } else {
+    // Decision panel is always fully opaque
+    panelMesh.material.opacity = 1.0;
+  }
 }
 
 /* ─────────────────────────────────────────────
@@ -278,8 +310,8 @@ let hoveredBtn = null;
 
 function drawDecisionPanel(sceneData, hovered = null) {
   const ctx  = panelCtx;
-  const W    = CANVAS_W;
-  const H    = CANVAS_H_DEC;
+  const W    = DECISION.canvasW;
+  const H    = DECISION.canvasH;
   ctx.clearRect(0, 0, W, H);
 
   // Background
@@ -310,6 +342,19 @@ function drawDecisionPanel(sceneData, hovered = null) {
   ctx.strokeStyle = COLOURS.border;
   ctx.lineWidth   = 1;
   ctx.beginPath(); ctx.moveTo(60, 140); ctx.lineTo(W - 60, 140); ctx.stroke();
+
+  // // Replay Button
+  // const replayY = 240, replayW = 340, replayH = 72;
+  //   const replayX = W / 2 - replayW / 2;
+  //   const isHover = hovered === 0;
+  //   roundRect(ctx, replayX, replayY, replayW, replayH, 12);
+  //   ctx.fillStyle   = isHover ? COLOURS.accent : COLOURS.btnBg; ctx.fill();
+  //   ctx.strokeStyle = isHover ? COLOURS.accent : COLOURS.border; ctx.lineWidth = isHover ? 2 : 1; ctx.stroke();
+  //   ctx.fillStyle   = isHover ? COLOURS.btnPressText : COLOURS.text;
+  //   ctx.font        = '500 26px system-ui, sans-serif';
+  //   ctx.textAlign   = 'center';
+  //   ctx.fillText('↺  Replay', W / 2, replayY + replayH / 2 + 9);
+  //   panelButtons.push({ x: replayX, y: replayY, w: replayW, h: replayH, id: 0, label: 'Replay', next: currentPath });
 
   // Buttons
   panelButtons = [];
@@ -392,12 +437,18 @@ let isMuted  = false;
 function drawTransportBar(hovered = null) {
   if (!panelCtx) return;
   const ctx = panelCtx;
-  const W   = CANVAS_W;
-  const H   = CANVAS_H_TRANS;
+  const W   = TRANSPORT.canvasW;
+  const H   = TRANSPORT.canvasH;
+  const pX  = TRANSPORT.padX;
+  const pW  = W - pX * 2;
   ctx.clearRect(0, 0, W, H);
 
-  // Background
-  ctx.fillStyle = COLOURS.bg;
+  // Opacity-aware colours: when idle, reduce contrast of bg/borders
+  // The canvas itself is always drawn at full alpha; the THREE material opacity handles fading.
+  // We do boost the progress bar visibility slightly when idle so it's still legible as a ghost.
+
+  // Background — slightly more visible when idle so the bar shape reads through
+  ctx.fillStyle = isPanelHovered ? COLOURS.bg : 'rgba(13,13,13,0.6)';
   roundRect(ctx, 4, 4, W - 8, H - 8, 16);
   ctx.fill();
   ctx.strokeStyle = COLOURS.border; ctx.lineWidth = 1;
@@ -407,7 +458,7 @@ function drawTransportBar(hovered = null) {
   transportButtons = [];
 
   // Progress bar
-  const pX  = 60, pY = 30, pW = W - 120, pH = 8;
+  const pY = TRANSPORT.padY, pH = 8;
   ctx.fillStyle = COLOURS.progressBg;
   roundRect(ctx, pX, pY, pW, pH, 4); ctx.fill();
 
@@ -429,12 +480,12 @@ function drawTransportBar(hovered = null) {
   ctx.fillStyle = COLOURS.subtext; ctx.font = '400 20px system-ui, sans-serif'; ctx.textAlign = 'left';
   ctx.fillText(`${fmt(cur)} / ${fmt(dur)}`, pX, 78);
 
-  // Buttons: Play/Pause | Mute | ── spacer ──
+  // Buttons: Play/Pause | Mute
   const BTN_W = 72, BTN_H = 54, BTN_Y = 96;
 
   const btns = [
-    { id: 'playpause', label: video.paused ? '▶' : '⏸', x: 60 },
-    { id: 'mute',      label: isMuted ? '🔇' : '🔊',    x: 148 },
+    { id: 'playpause', label: video.paused ? '▶' : '⏸', x: pX },
+    { id: 'mute',      label: isMuted ? '🔇' : '🔊',    x: pX + 88 },
   ];
 
   btns.forEach(b => {
@@ -456,7 +507,6 @@ function drawTransportBar(hovered = null) {
 const raycaster = new THREE.Raycaster();
 const mouse2D   = new THREE.Vector2();
 
-// Map a raycaster hit on the panel plane to canvas UV coords
 function hitToButtonIndex(uv, buttonList) {
   const cx = uv.x * panelCanvas.width;
   const cy = (1 - uv.y) * panelCanvas.height;
@@ -479,12 +529,25 @@ renderer.domElement.addEventListener('mousemove', e => {
   mouse2D.x =  (e.clientX / innerWidth)  * 2 - 1;
   mouse2D.y = -(e.clientY / innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse2D, camera);
+
   const uv = getHitUV();
-  if (!uv) { hoveredBtn = null; redrawPanel(); return; }
+  const wasHovered = isPanelHovered;
+  isPanelHovered = !!uv;
+
+  if (!uv) {
+    hoveredBtn = null;
+    if (wasHovered !== isPanelHovered) redrawPanel();
+    return;
+  }
+
   const activeButtons = appState === State.DECISION ? panelButtons : transportButtons;
   const idx = hitToButtonIndex(uv, activeButtons);
   const id  = idx >= 0 ? (appState === State.DECISION ? idx : activeButtons[idx].id) : null;
-  if (id !== hoveredBtn) { hoveredBtn = id; redrawPanel(); }
+
+  if (id !== hoveredBtn || wasHovered !== isPanelHovered) {
+    hoveredBtn = id;
+    redrawPanel();
+  }
 });
 
 renderer.domElement.addEventListener('click', e => {
@@ -524,7 +587,6 @@ function onTransportAction(btn, uv) {
   } else if (btn.id === 'mute') {
     isMuted = !isMuted; video.muted = isMuted;
   } else if (btn.id === 'seek') {
-    // Map UV x within the progress bar range
     const cx  = uv.x * panelCanvas.width;
     const pX  = 60, pW = panelCanvas.width - 120;
     const t   = Math.max(0, Math.min(1, (cx - pX) / pW));
@@ -577,6 +639,7 @@ const controllerLines        = [];
 function updateVRHover() {
   if (!renderer.xr.isPresenting || !panelMesh) return;
   let found = null;
+  let panelHit = false;
   for (const { ctrl } of controllerLines) {
     const mat = new THREE.Matrix4().extractRotation(ctrl.matrixWorld);
     const dir = new THREE.Vector3(0, 0, -1).applyMatrix4(mat);
@@ -584,11 +647,19 @@ function updateVRHover() {
     raycaster.set(pos, dir);
     const uv = getHitUV();
     if (!uv) continue;
+    panelHit = true;
     const activeButtons = appState === State.DECISION ? panelButtons : transportButtons;
     const idx = hitToButtonIndex(uv, activeButtons);
     if (idx >= 0) { found = appState === State.DECISION ? idx : activeButtons[idx].id; break; }
   }
-  if (found !== hoveredBtn) { hoveredBtn = found; redrawPanel(); }
+
+  const wasHovered = isPanelHovered;
+  isPanelHovered = panelHit;
+
+  if (found !== hoveredBtn || wasHovered !== isPanelHovered) {
+    hoveredBtn = found;
+    redrawPanel();
+  }
 }
 
 /* ─────────────────────────────────────────────
@@ -641,6 +712,7 @@ menuBtnEl.addEventListener('click', () => { if (MENU_URL) location.href = MENU_U
 async function loadScene(jsonPath) {
   appState = State.LOADING;
   hoveredBtn = null;
+  isPanelHovered = false;
   disposePanelMesh();
   setLoadProgress(0.1);
 
@@ -710,12 +782,12 @@ async function loadScene(jsonPath) {
     if (MENU_URL) menuBtnEl.style.display = 'inline-block';
 
     playBtnEl.onclick = () => {
-    video.play().then(() => {
-    hideOverlay();
-    transitionToPlaying();
-    vrBtnEl.style.display = 'inline-block'; // keep VR button visible
-  }).catch(() => {});
-};
+      video.play().then(() => {
+        hideOverlay();
+        transitionToPlaying();
+        vrBtnEl.style.display = 'inline-block';
+      }).catch(() => {});
+    };
   }
 
   setTimeout(() => { loadBar.style.width = '0%'; }, 600);
@@ -723,16 +795,18 @@ async function loadScene(jsonPath) {
 
 function transitionToPlaying() {
   appState = State.PLAYING;
-  // Build transport bar panel
-  createPanel(PANEL_W, PANEL_H_TRANSPORT, CANVAS_W, CANVAS_H_TRANS);
+  isPanelHovered = false;
+  createPanel(TRANSPORT.worldW, TRANSPORT.worldH, TRANSPORT.canvasW, TRANSPORT.canvasH);
+  if (panelMesh) panelMesh.material.opacity = TRANSPORT_OPACITY_IDLE;
   positionPanel();
   drawTransportBar();
 }
 
 function transitionToDecision() {
   appState = State.DECISION;
-  // Rebuild panel for decision layout
-  createPanel(PANEL_W, PANEL_H_DECISION, CANVAS_W, CANVAS_H_DEC);
+  isPanelHovered = false;
+  createPanel(DECISION.worldW, DECISION.worldH, DECISION.canvasW, DECISION.canvasH);
+  if (panelMesh) panelMesh.material.opacity = 1.0;
   positionPanel();
   drawDecisionPanel(currentJSON, null);
 }
@@ -762,6 +836,9 @@ renderer.setAnimationLoop((time) => {
 
   // Keep panel facing camera
   if (panelMesh) positionPanel();
+
+  // Smoothly animate transport bar opacity every frame
+  updatePanelOpacity();
 
   // Update transport bar every ~250 ms while playing
   if (appState === State.PLAYING && time - lastTransportUpdate > 250) {
