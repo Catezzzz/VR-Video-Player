@@ -6,7 +6,7 @@
     "choices": [
       {
         "label": "Option A",
-        "next": "scenarios/morning-care/optionA.json"
+        "next": "scenarios/morning-care/OptionA.json"
       },
       {
         "label": "Option B",
