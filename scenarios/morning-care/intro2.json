@@ -14,7 +14,7 @@
       },
       {
         "label": "Option C",
-        "next": "sscenarios/morning-care/OptionC.json"
+        "next": "scenarios/morning-care/OptionC.json"
       }
     ]
   }
