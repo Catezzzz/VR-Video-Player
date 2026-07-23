@@ -1,20 +1,20 @@
 {
   "title": "Intro2",
-  "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/Test%20Video/Test%20video%200.mp4",
+  "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/Morning%20Care/2_morning%20care_before%20options.mp4",
   "decision": {
     "prompt": "What will you do?",
     "choices": [
       {
-        "label": "Ask to go back to room",
-        "next": "scenarios/morning-care/backtoroom.json"
+        "label": "Option A",
+        "next": "scenarios/morning-care/optionA.json"
       },
       {
-        "label": "Redirect",
-        "next": "scenarios/morning-care/redirect.json"
+        "label": "Option B",
+        "next": "scenarios/morning-care/OptionB.json"
       },
       {
-        "label": "No response",
-        "next": "sscenarios/morning-care/noresponse.json"
+        "label": "Option C",
+        "next": "sscenarios/morning-care/OptionC.json"
       }
     ]
   }
