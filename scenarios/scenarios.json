@@ -4,5 +4,11 @@
       "title": "Test Scenario",
       "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
       "intro": "scenarios/test-scenario/intro.json"
+    },
+    {
+      "id": "morning-care",
+      "title": "Morning Care",
+      "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
+      "intro": "scenarios/morning-care/intro.json"
     }
   ]
