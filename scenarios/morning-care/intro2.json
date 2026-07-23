@@ -1,0 +1,21 @@
+{
+  "title": "Intro2",
+  "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/Test%20Video/Test%20video%200.mp4",
+  "decision": {
+    "prompt": "What will you do?",
+    "choices": [
+      {
+        "label": "Ask to go back to room",
+        "next": "scenarios/morning-care/backtoroom.json"
+      },
+      {
+        "label": "Redirect",
+        "next": "scenarios/morning-care/redirect.json"
+      },
+      {
+        "label": "No response",
+        "next": "sscenarios/morning-care/noresponse.json"
+      }
+    ]
+  }
+}

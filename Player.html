@@ -839,9 +839,15 @@ function transitionToDecision() {
   drawDecisionPanel(currentJSON, null);
 }
 
-/* Video ended → show decision */
+/* Video ended → decide what happens next */
 video.addEventListener('ended', () => {
-  transitionToDecision();
+  if (currentJSON.decision) {
+    transitionToDecision();
+  } else if (currentJSON.next) {
+    loadScene(currentJSON.next);
+  } else {
+    transitionToDecision(); // terminal — shows Replay/Menu screen
+  }
 });
 
 function showError(msg) {
