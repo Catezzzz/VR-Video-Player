@@ -100,7 +100,7 @@ import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFa
 /* ─────────────────────────────────────────────
    CONSTANTS & CONFIG
 ───────────────────────────────────────────── */
-const VERSION = '0.2';
+const VERSION = '0.3';
 const SPHERE_RADIUS = 50;
 
 // Transport bar config
@@ -160,8 +160,11 @@ const State = { BOOT:'boot', LOADING:'loading', PLAYING:'playing', DECISION:'dec
 let appState    = State.BOOT;
 let currentJSON = null;     // parsed JSON for active scene
 let currentPath = null;     // path of active scene JSON
-let introPath = null;
 
+// Stack of decision-node paths the user has passed through, used by the
+// "Previous Options" button. Pushed whenever the user makes a story choice
+// from a decision panel; popped when they navigate back.
+let decisionHistory = [];
 
 // Track whether pointer is over the panel at all (for opacity)
 let isPanelHovered = false;
@@ -343,110 +346,127 @@ function drawDecisionPanel(sceneData, hovered = null) {
 
   // Prompt text
   const decision = sceneData.decision;
+  const choices  = decision?.choices || [];
   const prompt   = decision?.prompt || 'What happens next?';
 
   ctx.fillStyle  = COLOURS.subtext;
   ctx.font       = '500 22px system-ui, sans-serif';
   ctx.textAlign  = 'center';
-  ctx.fillText('CHOOSE YOUR PATH', W / 2, 56);
+  ctx.fillText(decision ? 'CHOOSE YOUR PATH' : 'SCENARIO COMPLETE', W / 2, 56);
 
   ctx.fillStyle  = COLOURS.text;
   ctx.font       = '500 38px system-ui, sans-serif';
-  ctx.fillText(prompt, W / 2, 112);
+  ctx.fillText(decision ? prompt : '— End of scenario —', W / 2, 112);
 
   // Divider
   ctx.strokeStyle = COLOURS.border;
   ctx.lineWidth   = 1;
   ctx.beginPath(); ctx.moveTo(60, 140); ctx.lineTo(W - 60, 140); ctx.stroke();
 
+  /* ── Utility row geometry (Replay / Previous Options / Menu) ──
+     Reserved at a fixed position near the bottom of the panel so it
+     shows up consistently whether or not there are story choices. */
+  const UTIL_H     = 64;
+  const utilY      = H - 96;
+  const dividerY   = utilY - 20;
 
-
-  // Buttons
   panelButtons = [];
-  const choices = decision?.choices || [];
-  const btnH    = 80;
-  const btnGap  = 16;
-  const btnX    = 60;
-  const btnW    = W - 120;
-  const startY  = 164;
 
-  choices.forEach((choice, i) => {
-    const by      = startY + i * (btnH + btnGap);
-    const isHover = hovered === i;
-    const bgCol   = isHover ? COLOURS.btnHover : COLOURS.btnBg;
-    const border  = isHover ? COLOURS.accent    : COLOURS.border;
-    const txt     = isHover ? COLOURS.accent     : COLOURS.text;
+  /* ── Story choices (or terminal message) fill the middle area ── */
+  const choiceAreaTop    = 164;
+  const choiceAreaBottom = dividerY - 24;
+  const gap              = 16;
 
-    roundRect(ctx, btnX, by, btnW, btnH, 12);
-    ctx.fillStyle   = bgCol;   ctx.fill();
-    ctx.strokeStyle = border;  ctx.lineWidth = isHover ? 2 : 1; ctx.stroke();
+  if (choices.length > 0) {
+    const available   = choiceAreaBottom - choiceAreaTop;
+    const naturalTotal = choices.length * 80 + (choices.length - 1) * gap;
+    const btnH = naturalTotal > available
+      ? (available - (choices.length - 1) * gap) / choices.length
+      : 80;
+    const btnX = 60;
+    const btnW = W - 120;
 
-    // Arrow indicator
-    ctx.fillStyle  = isHover ? COLOURS.accent : COLOURS.muted;
-    ctx.font       = '500 24px system-ui, sans-serif';
-    ctx.textAlign  = 'right';
-    ctx.fillText('→', btnX + btnW - 24, by + btnH / 2 + 9);
+    choices.forEach((choice, i) => {
+      const by      = choiceAreaTop + i * (btnH + gap);
+      const isHover = hovered === i;
+      const bgCol   = isHover ? COLOURS.btnHover : COLOURS.btnBg;
+      const border  = isHover ? COLOURS.accent    : COLOURS.border;
+      const txt     = isHover ? COLOURS.accent     : COLOURS.text;
 
-    // Label
-    ctx.fillStyle  = txt;
-    ctx.font       = `500 26px system-ui, sans-serif`;
-    ctx.textAlign  = 'left';
-    ctx.fillText(choice.label, btnX + 28, by + btnH / 2 + 9);
+      roundRect(ctx, btnX, by, btnW, btnH, 12);
+      ctx.fillStyle   = bgCol;   ctx.fill();
+      ctx.strokeStyle = border;  ctx.lineWidth = isHover ? 2 : 1; ctx.stroke();
 
-    panelButtons.push({ x: btnX, y: by, w: btnW, h: btnH, id: i, label: choice.label, next: choice.next });
-    
-  });
+      // Arrow indicator
+      ctx.fillStyle  = isHover ? COLOURS.accent : COLOURS.muted;
+      ctx.font       = '500 24px system-ui, sans-serif';
+      ctx.textAlign  = 'right';
+      ctx.fillText('→', btnX + btnW - 24, by + btnH / 2 + 9);
 
-  // Terminal (no decision) state
-  if (!decision) {
+      // Label
+      ctx.fillStyle  = txt;
+      ctx.font       = `500 26px system-ui, sans-serif`;
+      ctx.textAlign  = 'left';
+      ctx.fillText(choice.label, btnX + 28, by + btnH / 2 + 9);
+
+      panelButtons.push({
+        x: btnX, y: by, w: btnW, h: btnH,
+        id: panelButtons.length, label: choice.label,
+        action: 'goto', next: choice.next
+      });
+    });
+  } else {
     ctx.fillStyle = COLOURS.subtext;
     ctx.font      = '400 26px system-ui, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('— End of scenario —', W / 2, 200);
-
-    const replayY = 240, replayW = 340, replayH = 72;
-    const replayX = W / 2 - replayW / 2;
-    const isHover = hovered === 0;
-    roundRect(ctx, replayX, replayY, replayW, replayH, 12);
-    ctx.fillStyle   = isHover ? COLOURS.accent : COLOURS.btnBg; ctx.fill();
-    ctx.strokeStyle = isHover ? COLOURS.accent : COLOURS.border; ctx.lineWidth = isHover ? 2 : 1; ctx.stroke();
-    ctx.fillStyle   = isHover ? COLOURS.btnPressText : COLOURS.text;
-    ctx.font        = '500 26px system-ui, sans-serif';
-    ctx.textAlign   = 'center';
-    ctx.fillText('↺  Replay', W / 2, replayY + replayH / 2 + 9);
-    panelButtons.push({ x: replayX, y: replayY, w: replayW, h: replayH, id: 0, label: 'Replay', next: introPath });
-    console.log('[currentPath]', currentPath);
-
-
-    //Add Menu button
-
-    const menuY = 330, menuW = 340, menuH = 72;
-    const menuX = W / 2 - menuW / 2;
-    const isH2  = hovered === 1;
-    roundRect(ctx, menuX, menuY, menuW, menuH, 12);
-    ctx.fillStyle   = isH2 ? COLOURS.accent : 'transparent'; ctx.fill();
-    ctx.strokeStyle = COLOURS.border; ctx.lineWidth = 1; ctx.stroke();
-    ctx.fillStyle   = isH2 ? COLOURS.btnPressText : COLOURS.subtext;
-    ctx.font        = '500 24px system-ui, sans-serif';
-    ctx.textAlign   = 'center';
-    ctx.fillText('↩  Back to Menu', W / 2, menuY + menuH / 2 + 8);
-    panelButtons.push({ x: menuX, y: menuY, w: menuW, h: menuH, id: 1, label: 'Menu', next: MENU_URL });
-
-
-    if (MENU_URL) {
-      const menuY = 330, menuW = 340, menuH = 72;
-      const menuX = W / 2 - menuW / 2;
-      const isH2  = hovered === 1;
-      roundRect(ctx, menuX, menuY, menuW, menuH, 12);
-      ctx.fillStyle   = isH2 ? COLOURS.accent : 'transparent'; ctx.fill();
-      ctx.strokeStyle = COLOURS.border; ctx.lineWidth = 1; ctx.stroke();
-      ctx.fillStyle   = isH2 ? COLOURS.btnPressText : COLOURS.subtext;
-      ctx.font        = '500 24px system-ui, sans-serif';
-      ctx.textAlign   = 'center';
-      ctx.fillText('↩  Back to Menu', W / 2, menuY + menuH / 2 + 8);
-      panelButtons.push({ x: menuX, y: menuY, w: menuW, h: menuH, id: 1, label: 'Menu', next: MENU_URL });
-    }
+    ctx.fillText('Choose an option below', W / 2, (choiceAreaTop + choiceAreaBottom) / 2 + 8);
   }
+
+  /* ── Utility divider ── */
+  ctx.strokeStyle = COLOURS.border;
+  ctx.lineWidth   = 1;
+  ctx.beginPath(); ctx.moveTo(60, dividerY); ctx.lineTo(W - 60, dividerY); ctx.stroke();
+
+  /* ── Utility buttons: Replay | Previous Options (if any) | Menu ── */
+  const utilItems = [{ action: 'replay', label: '↺  Replay' }];
+  if (decisionHistory.length > 0) {
+    utilItems.push({ action: 'previous', label: '⏮  Previous Options' });
+  }
+  if (MENU_URL) {
+    utilItems.push({ action: 'menu', label: '↩  Menu' });
+  }
+
+  const utilMarginX = 60;
+  const utilGap     = 16;
+  const utilAreaW   = W - utilMarginX * 2;
+  const n           = utilItems.length;
+  const utilBtnW    = (utilAreaW - (n - 1) * utilGap) / n;
+
+  utilItems.forEach((item, i) => {
+    const idx     = panelButtons.length;
+    const bx      = utilMarginX + i * (utilBtnW + utilGap);
+    const isHover = hovered === idx;
+    const isMenu  = item.action === 'menu';
+
+    roundRect(ctx, bx, utilY, utilBtnW, UTIL_H, 12);
+    ctx.fillStyle   = isHover ? COLOURS.accent : (isMenu ? 'transparent' : COLOURS.btnBg);
+    ctx.fill();
+    ctx.strokeStyle = isHover ? COLOURS.accent : COLOURS.border;
+    ctx.lineWidth   = isHover ? 2 : 1;
+    ctx.stroke();
+
+    ctx.fillStyle = isHover ? COLOURS.btnPressText : (isMenu ? COLOURS.subtext : COLOURS.text);
+    ctx.font      = '500 22px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(item.label, bx + utilBtnW / 2, utilY + UTIL_H / 2 + 8);
+
+    panelButtons.push({
+      x: bx, y: utilY, w: utilBtnW, h: UTIL_H,
+      id: idx, label: item.label,
+      action: item.action,
+      next: item.action === 'menu' ? MENU_URL : null
+    });
+  });
 
   panelTex.needsUpdate = true;
 }
@@ -597,11 +617,51 @@ function handlePanelClick() {
 }
 
 function onChoiceSelected(btn) {
-  if (btn.label === 'Menu' && MENU_URL) {
-    location.href = MENU_URL;
+  if (btn.action === 'menu') {
+    if (MENU_URL) location.href = MENU_URL;
     return;
   }
+  if (btn.action === 'replay') {
+    // Restart the video for the current scene.
+    loadScene(currentPath);
+    return;
+  }
+  if (btn.action === 'previous') {
+    goToPreviousOptions();
+    return;
+  }
+  // Normal story choice — remember where we came from, then move on.
+  decisionHistory.push(currentPath);
   loadScene(btn.next);
+}
+
+/* Jump straight back to the previous decision panel without replaying
+   its video — the user already watched it on the way forward. */
+async function goToPreviousOptions() {
+  if (decisionHistory.length === 0) return;
+  const prevPath = decisionHistory.pop();
+
+  try {
+    const res = await fetch(prevPath);
+    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${prevPath}`);
+    const data = await res.json();
+
+    currentJSON = data;
+    currentPath = prevPath;
+
+    video.pause();
+    appState = State.DECISION;
+    hoveredBtn = null;
+    isPanelHovered = false;
+    createPanel(DECISION.worldW, DECISION.worldH, DECISION.canvasW, DECISION.canvasH);
+    if (panelMesh) panelMesh.material.opacity = 1.0;
+    positionPanel();
+    drawDecisionPanel(currentJSON, null);
+  } catch (e) {
+    console.error('[VRPlayer] Failed to go back to previous options:', e);
+    // Put the path back on the stack since we failed to navigate to it.
+    decisionHistory.push(prevPath);
+  }
 }
 
 function onTransportAction(btn, uv) {
@@ -766,8 +826,6 @@ async function loadScene(jsonPath) {
   }
   currentJSON = sceneData;
   currentPath = jsonPath;
-  introPath = currentPath.substring(0, currentPath.lastIndexOf("/"))+"/intro.json";
-  console.log('[currentPath]', currentPath);
 
   setLoadProgress(0.3);
   titleEl.textContent = sceneData.title || 'Scene';
@@ -846,7 +904,7 @@ video.addEventListener('ended', () => {
   } else if (currentJSON.next) {
     loadScene(currentJSON.next);
   } else {
-    transitionToDecision(); // terminal — shows Replay/Menu screen
+    transitionToDecision(); // terminal — shows Replay/Previous/Menu screen
   }
 });
 
