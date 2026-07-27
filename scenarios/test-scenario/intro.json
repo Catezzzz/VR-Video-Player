@@ -6,10 +6,12 @@
       "choices": [
         {
           "label": "Call Joey",
+          "desc": "Maybe a better nurse can help?",
           "next": "scenarios/test-scenario/Joey.json"
         },
         {
           "label": "Leave",
+          "desc": "This patient is too emotional for anyone to work with right now.",
           "next": "scenarios/test-scenario/Leave.json"
         }
       ]

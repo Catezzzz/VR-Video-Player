@@ -4,38 +4,47 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VR Branching Player</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #000; overflow: hidden; font-family: sans-serif; }
+    body { background: #0d0e11; overflow: hidden; font-family: 'Space Grotesk', system-ui, sans-serif; }
     canvas { display: block; }
 
     #overlay {
       position: fixed; inset: 0;
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      background: #000;
-      color: #fff;
+      background: radial-gradient(120% 90% at 50% 30%, #12162a 0%, #0b0d16 60%);
+      color: #f4f6ff;
       z-index: 10;
       transition: opacity 0.4s;
     }
     #overlay.hidden { opacity: 0; pointer-events: none; }
 
-    #overlay h1 { font-size: 1.4rem; margin-bottom: 1.2rem; letter-spacing: 0.04em; color: #ccc; }
-    #overlay p  { font-size: 0.85rem; color: #666; margin-bottom: 2rem; max-width: 340px; text-align: center; }
+    #overlay h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.9rem; letter-spacing: -0.01em; color: #f4f6ff; }
+    #overlay p  { font-family: 'IBM Plex Mono', monospace; font-size: 0.8rem; color: #aab3d6; margin-bottom: 2rem; max-width: 340px; text-align: center; letter-spacing: 0.02em; }
 
-    #error-msg { color: #f55; font-size: 0.9rem; margin-bottom: 1rem; display: none; }
+    #error-msg { color: #ff6b6b; font-size: 0.85rem; margin-bottom: 1rem; display: none; font-family: 'IBM Plex Mono', monospace; }
 
     .btn {
-      background: #fff; color: #000;
-      border: none; border-radius: 6px;
-      padding: 0.65rem 1.6rem;
-      font-size: 0.95rem; font-weight: 600;
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background: #4c6fff; color: #fff;
+      border: none; border-radius: 13px;
+      padding: 0.75rem 1.7rem;
+      font-size: 0.95rem; font-weight: 700;
       cursor: pointer; margin: 0.3rem;
-      transition: background 0.15s;
+      box-shadow: 0 10px 30px -14px rgba(76,111,255,0.7);
+      transition: background 0.15s, transform 0.15s;
     }
-    .btn:hover { background: #ddd; }
-    .btn.secondary { background: transparent; color: #888; border: 1px solid #333; }
-    .btn.secondary:hover { color: #fff; border-color: #666; }
+    .btn:hover { background: #6483ff; transform: translateY(-1px); }
+    .btn.secondary {
+      background: rgba(143,163,255,0.1); color: #c3ccff;
+      border: 1px solid rgba(143,163,255,0.3);
+      box-shadow: none; font-weight: 600;
+    }
+    .btn.secondary:hover { background: rgba(143,163,255,0.18); color: #e9edff; border-color: rgba(143,163,255,0.5); }
 
     #vr-btn {
       display: none;
@@ -48,10 +57,11 @@
 
     #loading-bar-wrap {
       position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 20;
-      background: #111;
+      background: rgba(143,163,255,0.12);
     }
     #loading-bar {
-      height: 100%; width: 0%; background: #fff;
+      height: 100%; width: 0%; background: #4c6fff;
+      box-shadow: 0 0 10px rgba(76,111,255,0.6);
       transition: width 0.3s ease;
     }
 
@@ -60,9 +70,10 @@
       bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 0.75rem;
-      color: #555;
-      letter-spacing: 0.03em;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.7rem;
+      color: #6b7390;
+      letter-spacing: 0.1em;
       text-align: center;
       width: 90%;
     }
@@ -119,32 +130,47 @@ const TRANSPORT = {
 const DECISION = {
   distance:  3.5,
   height:   -0.3,
-  worldW:    2.4,
-  worldH:    1.6,
-  canvasW:   1024,
-  canvasH:   682,
+  worldW:    4,
+  worldH:    2.6*1.2, 
+  canvasW:   1078,
+  canvasH:   682*1.2,
 };
 
 // Opacity levels for transport bar
 const TRANSPORT_OPACITY_IDLE   = 0.18;  // when not hovered
 const TRANSPORT_OPACITY_ACTIVE = 1.0;   // when hovered
 
+// Guided Coach design tokens (see design doc: indigo accent, dark navy panels,
+// Space Grotesk for headings/labels, IBM Plex Mono for kickers & timestamps).
 const COLOURS = {
-  bg:       '#0d0d0d',
-  bgPanel:  '#141414',
-  border:   '#2a2a2a',
-  accent:   '#ffffff',
-  muted:    '#555555',
-  text:     '#e8e8e8',
-  subtext:  '#888888',
-  btnBg:    '#1e1e1e',
-  btnHover: '#2e2e2e',
-  btnPress: '#ffffff',
-  btnPressText: '#000000',
-  danger:   '#cc4444',
-  progress: '#ffffff',
-  progressBg:'#2a2a2a',
+  bg:          '#141a2e',   // panel surface (card bg)
+  bgOption:    'rgba(22,28,52,0.86)',  // default option-card fill
+  border:      'rgba(143,163,255,0)', //alpha was 0.18
+  borderHover: 'rgba(143,163,255,0.35)',
+  accent:      '#4c6fff',   // primary indigo
+  accentSoft:  '#8fa3ff',   // labels / kickers
+  success:     '#22d3a8',   // confirm / arrow accent
+  heading:     '#f4f6ff',
+  text:        '#e9edff',
+  muted:       '#aab3d6',
+  subtext:     '#8b93b8',
+  badgeBg:     'rgba(143,163,255,0.16)',
+  badgeText:   '#c3ccff',
+  btnBg:       'rgba(22,28,52,0.9)',
+  btnHover:    'rgba(76,111,255,0.1)',
+  utilHover:   'rgba(143, 163, 255,0.5)',
+  btnPress:    '#4c6fff',
+  btnPressText:'#ffffff',
+  ghostBg:     'rgba(143,163,255,0.1)',
+  ghostBorder: 'rgba(143,163,255,0.3)',
+  danger:      '#ff6b6b',
+  progress:    '#4c6fff',
+  progressBg:  'rgba(143,163,255,0.16)',
 };
+
+// Canvas font stacks (fallback to system fonts if webfonts haven't painted yet)
+const FONT_HEAD = "'Space Grotesk', system-ui, sans-serif";
+const FONT_MONO = "'IBM Plex Mono', monospace";
 
 /* ─────────────────────────────────────────────
    URL PARAMS
@@ -248,6 +274,11 @@ renderer.domElement.addEventListener('touchend', () => { touchLast = null; }, { 
    PANEL CANVAS UTILITIES
 ───────────────────────────────────────────── */
 function roundRect(ctx, x, y, w, h, r) {
+  // Clamp radius so it can never exceed half the shape's own width/height —
+  // an oversized radius (e.g. 999 for a "pill" button) makes the corner
+  // curves overshoot and self-intersect, producing a huge malformed wedge
+  // instead of a rounded rect. Clamping keeps a fully-rounded pill safe.
+  r = Math.max(0, Math.min(r, w / 2, h / 2));
   ctx.beginPath();
   ctx.moveTo(x + r, y);
   ctx.lineTo(x + w - r, y);
@@ -332,9 +363,13 @@ function drawDecisionPanel(sceneData, hovered = null) {
   const W    = DECISION.canvasW;
   const H    = DECISION.canvasH;
   ctx.clearRect(0, 0, W, H);
+  sphereMat.color.setRGB(0.35, 0.35, 0.35);   // dim background to about 35% brightness
 
-  // Background
-  ctx.fillStyle = COLOURS.bg;
+  // Background — dark navy card with soft radial lift, per design tokens
+  const bgGrad = ctx.createRadialGradient(W/2, H*0.3, 0, W/2, H*0.3, W*0.75);
+  //bgGrad.addColorStop(0, '#171f3c');
+  bgGrad.addColorStop(0, 'rgba(143,163,255,0.01)');
+  ctx.fillStyle = bgGrad;
   roundRect(ctx, 4, 4, W - 8, H - 8, 24);
   ctx.fill();
 
@@ -349,13 +384,15 @@ function drawDecisionPanel(sceneData, hovered = null) {
   const choices  = decision?.choices || [];
   const prompt   = decision?.prompt || 'What happens next?';
 
-  ctx.fillStyle  = COLOURS.subtext;
-  ctx.font       = '500 22px system-ui, sans-serif';
+  ctx.fillStyle  = COLOURS.accentSoft;
+  ctx.font       = `500 20px ${FONT_MONO}`;
   ctx.textAlign  = 'center';
+  ctx.letterSpacing = '3px';
   ctx.fillText(decision ? 'CHOOSE YOUR PATH' : 'SCENARIO COMPLETE', W / 2, 56);
+  ctx.letterSpacing = '0px';
 
-  ctx.fillStyle  = COLOURS.text;
-  ctx.font       = '500 38px system-ui, sans-serif';
+  ctx.fillStyle  = COLOURS.heading;
+  ctx.font       = `700 54px ${FONT_HEAD}`;
   ctx.fillText(decision ? prompt : '— End of scenario —', W / 2, 112);
 
   // Divider
@@ -382,32 +419,81 @@ function drawDecisionPanel(sceneData, hovered = null) {
     const naturalTotal = choices.length * 80 + (choices.length - 1) * gap;
     const btnH = naturalTotal > available
       ? (available - (choices.length - 1) * gap) / choices.length
-      : 80;
+      : 110;
     const btnX = 60;
     const btnW = W - 120;
 
     choices.forEach((choice, i) => {
       const by      = choiceAreaTop + i * (btnH + gap);
       const isHover = hovered === i;
-      const bgCol   = isHover ? COLOURS.btnHover : COLOURS.btnBg;
-      const border  = isHover ? COLOURS.accent    : COLOURS.border;
-      const txt     = isHover ? COLOURS.accent     : COLOURS.text;
+      const letter  = String.fromCharCode(65 + i); // A, B, C…
 
-      roundRect(ctx, btnX, by, btnW, btnH, 12);
-      ctx.fillStyle   = bgCol;   ctx.fill();
-      ctx.strokeStyle = border;  ctx.lineWidth = isHover ? 2 : 1; ctx.stroke();
+      // Selected/hovered glow — hand-drawn halo instead of ctx.shadowBlur.
+      // Native canvas shadowBlur is unreliable on the Quest/Oculus browser and
+      // can rasterize as a large, wrong-shaped solid instead of a soft blur —
+      // so we fake the glow with a few oversized, low-opacity rounded rects.
+      if (isHover) {
+        const haloPad = [18, 10, 4];
+        const haloAlpha = [0.01,0.05,0.1];
+        for (let h = 0; h < haloPad.length; h++) {
+          const p = haloPad[h];
+          ctx.fillStyle = `rgba(76,111,255,${haloAlpha[h]})`;
+          roundRect(ctx, btnX - p, by - p + 4, btnW + p * 2, btnH + p * 2, 30 + p);
+          ctx.fill();
+        }
+      }
 
-      // Arrow indicator
-      ctx.fillStyle  = isHover ? COLOURS.accent : COLOURS.muted;
-      ctx.font       = '500 24px system-ui, sans-serif';
-      ctx.textAlign  = 'right';
-      ctx.fillText('→', btnX + btnW - 24, by + btnH / 2 + 9);
+      roundRect(ctx, btnX, by, btnW, btnH, 30);
+      ctx.fillStyle   = isHover ? COLOURS.btnHover : COLOURS.bgOption;
+      ctx.fill();
 
-      // Label
-      ctx.fillStyle  = txt;
-      ctx.font       = `500 26px system-ui, sans-serif`;
-      ctx.textAlign  = 'left';
-      ctx.fillText(choice.label, btnX + 28, by + btnH / 2 + 9);
+      ctx.strokeStyle = isHover ? COLOURS.accent : COLOURS.border;
+      ctx.lineWidth   = isHover ? 1.5 : 1;
+      roundRect(ctx, btnX, by, btnW, btnH, 30);
+      ctx.stroke();
+
+      // Lettered badge
+      const badgeSize = 55, badgeX = btnX + 30, badgeY = by + (btnH - badgeSize) / 2;
+      roundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, 15);
+      ctx.fillStyle = isHover ? COLOURS.accent : COLOURS.badgeBg;
+      ctx.fill();
+      ctx.fillStyle = isHover ? '#ffffff' : COLOURS.badgeText;
+      ctx.font      = `700 22px ${FONT_HEAD}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(letter, badgeX + badgeSize / 2, badgeY + badgeSize / 2 + 6);
+
+      // Label X position (shared by label and description)
+      const textX = badgeX + badgeSize + 20;
+
+      if (choice.desc) {
+        // --- TWO-LINE LAYOUT (Label + Subtext Description) ---
+        
+        // 1. Label (Shifted up slightly)
+        ctx.fillStyle = isHover ? '#ffffff' : COLOURS.text;
+        ctx.font      = `${isHover ? 700 : 600} 24px ${FONT_HEAD}`;
+        ctx.textAlign = 'left';
+        ctx.fillText(choice.label, textX, by + btnH / 2 - 6);
+
+        // 2. Description (Smaller, muted text rendered below)
+        ctx.fillStyle = isHover ? COLOURS.accentSoft : COLOURS.subtext;
+        ctx.font      = `400 20px ${FONT_HEAD}`;
+        ctx.fillText(choice.desc, textX, by + btnH / 2 + 24);
+
+      } else {
+        // --- SINGLE-LINE FALLBACK (If choice.desc is missing or empty) ---
+        ctx.fillStyle = isHover ? '#ffffff' : COLOURS.text;
+        ctx.font      = `${isHover ? 700 : 600} 26px ${FONT_HEAD}`;
+        ctx.textAlign = 'left';
+        ctx.fillText(choice.label, textX, by + btnH / 2 + 9);
+      }
+
+      // Trailing arrow — only lit up on hover/selected
+      if (isHover) {
+        ctx.fillStyle  = COLOURS.success;
+        ctx.font       = `500 24px ${FONT_HEAD}`;
+        ctx.textAlign  = 'right';
+        ctx.fillText('→', btnX + btnW - 24, by + btnH / 2 + 9);
+      }
 
       panelButtons.push({
         x: btnX, y: by, w: btnW, h: btnH,
@@ -417,7 +503,7 @@ function drawDecisionPanel(sceneData, hovered = null) {
     });
   } else {
     ctx.fillStyle = COLOURS.subtext;
-    ctx.font      = '400 26px system-ui, sans-serif';
+    ctx.font      = `400 26px ${FONT_HEAD}`;
     ctx.textAlign = 'center';
     ctx.fillText('Choose an option below', W / 2, (choiceAreaTop + choiceAreaBottom) / 2 + 8);
   }
@@ -433,7 +519,7 @@ function drawDecisionPanel(sceneData, hovered = null) {
     utilItems.push({ action: 'previous', label: '⏮  Previous Options' });
   }
   if (MENU_URL) {
-    utilItems.push({ action: 'menu', label: '↩  Menu' });
+    utilItems.push({ action: 'menu', label: '≡ Menu' });
   }
 
   const utilMarginX = 60;
@@ -446,19 +532,20 @@ function drawDecisionPanel(sceneData, hovered = null) {
     const idx     = panelButtons.length;
     const bx      = utilMarginX + i * (utilBtnW + utilGap);
     const isHover = hovered === idx;
-    const isMenu  = item.action === 'menu';
 
-    roundRect(ctx, bx, utilY, utilBtnW, UTIL_H, 12);
-    ctx.fillStyle   = isHover ? COLOURS.accent : (isMenu ? 'transparent' : COLOURS.btnBg);
+    // Ghost pill — bordered, tinted indigo; fills solid indigo on hover
+    roundRect(ctx, bx, utilY, utilBtnW, UTIL_H, 999);
+    ctx.fillStyle   = isHover ? COLOURS.utilHover : COLOURS.ghostBg;
     ctx.fill();
-    ctx.strokeStyle = isHover ? COLOURS.accent : COLOURS.border;
-    ctx.lineWidth   = isHover ? 2 : 1;
+    ctx.strokeStyle = isHover ? COLOURS.utilHover : COLOURS.ghostBorder;
+    ctx.lineWidth   = isHover ? 1.5 : 1;
+    roundRect(ctx, bx, utilY, utilBtnW, UTIL_H, 999);
     ctx.stroke();
 
-    ctx.fillStyle = isHover ? COLOURS.btnPressText : (isMenu ? COLOURS.subtext : COLOURS.text);
-    ctx.font      = '500 22px system-ui, sans-serif';
+    ctx.fillStyle = isHover ? '#ffffff' : COLOURS.badgeText;
+    ctx.font      = `400 21px ${FONT_HEAD}`;
     ctx.textAlign = 'center';
-    ctx.fillText(item.label, bx + utilBtnW / 2, utilY + UTIL_H / 2 + 8);
+    ctx.fillText(item.label, bx + utilBtnW / 2, utilY + UTIL_H / 2 + 7);
 
     panelButtons.push({
       x: bx, y: utilY, w: utilBtnW, h: UTIL_H,
@@ -490,12 +577,12 @@ function drawTransportBar(hovered = null) {
   // The canvas itself is always drawn at full alpha; the THREE material opacity handles fading.
   // We do boost the progress bar visibility slightly when idle so it's still legible as a ghost.
 
-  // Background — slightly more visible when idle so the bar shape reads through
-  ctx.fillStyle = isPanelHovered ? COLOURS.bg : 'rgba(13,13,13,0.6)';
-  roundRect(ctx, 4, 4, W - 8, H - 8, 16);
+  // Background — dark navy card; slightly more transparent when idle
+  ctx.fillStyle = isPanelHovered ? COLOURS.bg : 'rgba(20,26,46,0.6)';
+  roundRect(ctx, 4, 4, W - 8, H - 8, 18);
   ctx.fill();
   ctx.strokeStyle = COLOURS.border; ctx.lineWidth = 1;
-  roundRect(ctx, 4, 4, W - 8, H - 8, 16);
+  roundRect(ctx, 4, 4, W - 8, H - 8, 18);
   ctx.stroke();
 
   transportButtons = [];
@@ -513,17 +600,22 @@ function drawTransportBar(hovered = null) {
     roundRect(ctx, pX, pY, pW * prog, pH, 4); ctx.fill();
   }
 
-  // Scrubber knob
-  ctx.fillStyle = '#fff';
-  ctx.beginPath(); ctx.arc(pX + pW * prog, pY + pH / 2, 8, 0, Math.PI * 2); ctx.fill();
+  // Scrubber knob — indigo with a hand-drawn halo (no ctx.shadowBlur; see note above)
+  const knobX = pX + pW * prog, knobY = pY + pH / 2;
+  ctx.fillStyle = 'rgba(76,111,255,0.25)';
+  ctx.beginPath(); ctx.arc(knobX, knobY, 16, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(76,111,255,0.4)';
+  ctx.beginPath(); ctx.arc(knobX, knobY, 11, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(knobX, knobY, 8, 0, Math.PI * 2); ctx.fill();
   transportButtons.push({ x: pX - 8, y: pY - 10, w: pW + 16, h: pH + 20, id: 'seek', label: 'seek' });
 
   // Time label
   const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-  ctx.fillStyle = COLOURS.subtext; ctx.font = '400 20px system-ui, sans-serif'; ctx.textAlign = 'left';
+  ctx.fillStyle = COLOURS.accentSoft; ctx.font = `400 19px ${FONT_MONO}`; ctx.textAlign = 'left';
   ctx.fillText(`${fmt(cur)} / ${fmt(dur)}`, pX, 78);
 
-  // Buttons: Play/Pause | Mute
+  // Buttons: Play/Pause | Mute — square icon tiles per the "Icon 40²" component
   const BTN_W = 72, BTN_H = 54, BTN_Y = 96;
 
   const btns = [
@@ -533,10 +625,11 @@ function drawTransportBar(hovered = null) {
 
   btns.forEach(b => {
     const isH = hovered === b.id;
-    roundRect(ctx, b.x, BTN_Y, BTN_W, BTN_H, 10);
+    roundRect(ctx, b.x, BTN_Y, BTN_W, BTN_H, 12);
     ctx.fillStyle   = isH ? COLOURS.btnHover : COLOURS.btnBg; ctx.fill();
-    ctx.strokeStyle = isH ? COLOURS.accent : COLOURS.border; ctx.lineWidth = isH ? 2 : 1; ctx.stroke();
-    ctx.fillStyle   = COLOURS.text; ctx.font = '22px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.strokeStyle = isH ? COLOURS.accent : COLOURS.border; ctx.lineWidth = isH ? 1.5 : 1; ctx.stroke();
+    ctx.fillStyle   = isH ? COLOURS.accentSoft : COLOURS.badgeText;
+    ctx.font        = '22px system-ui, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(b.label, b.x + BTN_W / 2, BTN_Y + BTN_H / 2 + 8);
     transportButtons.push({ x: b.x, y: BTN_Y, w: BTN_W, h: BTN_H, id: b.id, label: b.label });
   });
@@ -880,6 +973,9 @@ async function loadScene(jsonPath) {
 }
 
 function transitionToPlaying() {
+  // Restore sphere background brightness to 100%
+  sphereMat.color.setRGB(1.0, 1.0, 1.0);
+
   appState = State.PLAYING;
   isPanelHovered = false;
   createPanel(TRANSPORT.worldW, TRANSPORT.worldH, TRANSPORT.canvasW, TRANSPORT.canvasH);

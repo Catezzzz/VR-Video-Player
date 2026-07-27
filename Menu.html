@@ -6,22 +6,25 @@
 <title>Scenario Library</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:        #0a0a0a;
-    --card-bg:   #121212;
-    --border:    #242424;
-    --border-hi: #f5f5f5;
-    --text:      #ededed;
-    --subtext:   #7c7c7c;
-    --accent:    #f5f5f5;
+    --bg:        #0b0d16;
+    --bg-grad:   #12162a;
+    --card-bg:   rgba(22,28,52,0.82);
+    --border:    rgba(143,163,255,0.18);
+    --border-hi: #4c6fff;
+    --text:      #e9edff;
+    --heading:   #f4f6ff;
+    --subtext:   #8b93b8;
+    --accent:    #4c6fff;
+    --accent-soft: #8fa3ff;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body {
-    background: var(--bg);
+    background: radial-gradient(120% 90% at 20% 0%, var(--bg-grad) 0%, var(--bg) 60%);
     color: var(--text);
-    font-family: system-ui, sans-serif;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
     min-height: 100vh;
   }
 
@@ -45,13 +48,14 @@
     font-weight: 600;
     font-size: clamp(1.8rem, 4vw, 2.6rem);
     letter-spacing: -0.01em;
+    color: var(--heading);
   }
   header p {
     margin-top: 10px;
-    color: var(--subtext);
-    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-soft);
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 0.78rem;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
   }
   header .rule {
@@ -77,17 +81,18 @@
   .card {
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 15px;
     overflow: hidden;
     cursor: pointer;
     text-decoration: none;
     color: inherit;
     display: block;
-    transition: border-color 0.2s ease, transform 0.2s ease;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   }
   .card:hover {
     border-color: var(--border-hi);
     transform: translateY(-3px);
+    box-shadow: 0 10px 30px -14px rgba(76,111,255,0.7);
   }
   .card:focus-visible {
     outline: 2px solid var(--accent);
@@ -97,7 +102,7 @@
   .thumb-wrap {
     position: relative;
     aspect-ratio: 16 / 9;
-    background: linear-gradient(135deg, #1c1c1c, #0a0a0a);
+    background: linear-gradient(135deg, #1c2440, #0b0d16);
     overflow: hidden;
   }
   .thumb-wrap img {
@@ -144,32 +149,32 @@
   }
   .card-title span.label {
     font-family: 'Space Grotesk', system-ui, sans-serif;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 1rem;
     color: var(--text);
   }
-  .card:hover .card-title span.label { color: var(--accent); }
+  .card:hover .card-title span.label { color: var(--heading); }
   .card-title span.arrow {
     color: var(--subtext);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 0.85rem;
     transition: transform 0.2s ease, color 0.2s ease;
   }
   .card:hover .card-title span.arrow {
-    color: var(--accent);
+    color: var(--accent-soft);
     transform: translateX(3px);
   }
 
   /* ── empty / error states ────────────────────── */
   .state-msg {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     color: var(--subtext);
     font-size: 0.85rem;
     padding: 40px 0;
     max-width: 480px;
     line-height: 1.6;
   }
-  .state-msg strong { color: var(--text); }
+  .state-msg strong { color: var(--heading); }
 </style>
 </head>
 <body>
@@ -205,13 +210,13 @@
 
   function playGlyphSVG() {
     return `<svg width="44" height="44" viewBox="0 0 44 44">
-      <circle cx="22" cy="22" r="21" fill="rgba(0,0,0,0.45)" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
-      <path d="M18 14L31 22L18 30Z" fill="#f5f5f5"/>
+      <circle cx="22" cy="22" r="21" fill="rgba(10,14,28,0.55)" stroke="#4c6fff" stroke-width="1.5"/>
+      <path d="M18 14L31 22L18 30Z" fill="#f4f6ff"/>
     </svg>`;
   }
 
   function fallbackIconSVG() {
-    return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+    return `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8fa3ff" stroke-width="1.4">
       <rect x="2" y="4" width="20" height="14" rx="2"/>
       <circle cx="8" cy="10" r="1.6"/>
       <path d="M2 16l5.5-4.5L12 14l4-3L22 15"/>
