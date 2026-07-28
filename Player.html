@@ -131,9 +131,9 @@ const DECISION = {
   distance:  3.5,
   height:   -0.3,
   worldW:    4,
-  worldH:    2.6*1.2, 
+  worldH:    3.12, //3.12 
   canvasW:   1078,
-  canvasH:   682*1.2,
+  canvasH:   818.4,//818.4  110+16
 };
 
 // Opacity levels for transport bar
@@ -144,11 +144,11 @@ const TRANSPORT_OPACITY_ACTIVE = 1.0;   // when hovered
 // Space Grotesk for headings/labels, IBM Plex Mono for kickers & timestamps).
 const COLOURS = {
   bg:          '#141a2e',   // panel surface (card bg)
-  bgOption:    'rgba(22,28,52,0.86)',  // default option-card fill
+  bgOption:    'rgba(22,28,52,0.8)',  // default option-card fill
   border:      'rgba(143,163,255,0)', //alpha was 0.18
   borderHover: 'rgba(143,163,255,0.35)',
   accent:      '#4c6fff',   // primary indigo
-  accentSoft:  '#8fa3ff',   // labels / kickers
+  accentSoft:  '#a6b6ff',   // labels / kickers; was '#8fa3ff'
   success:     '#22d3a8',   // confirm / arrow accent
   heading:     '#f4f6ff',
   text:        '#e9edff',
@@ -361,9 +361,9 @@ let hoveredBtn = null;
 function drawDecisionPanel(sceneData, hovered = null) {
   const ctx  = panelCtx;
   const W    = DECISION.canvasW;
-  const H    = DECISION.canvasH;
+  const H    = DECISION.canvasH - 252;
   ctx.clearRect(0, 0, W, H);
-  sphereMat.color.setRGB(0.35, 0.35, 0.35);   // dim background to about 35% brightness
+  sphereMat.color.setRGB(0.4, 0.4, 0.4);   // dim background to about 35% brightness
 
   // Background — dark navy card with soft radial lift, per design tokens
   const bgGrad = ctx.createRadialGradient(W/2, H*0.3, 0, W/2, H*0.3, W*0.75);
@@ -379,21 +379,38 @@ function drawDecisionPanel(sceneData, hovered = null) {
   roundRect(ctx, 4, 4, W - 8, H - 8, 24);
   ctx.stroke();
 
-  // Prompt text
-  const decision = sceneData.decision;
+// Prompt text & Hint
+const decision = sceneData.decision;
   const choices  = decision?.choices || [];
   const prompt   = decision?.prompt || 'What happens next?';
+  const hint     = decision?.hint;
 
-  ctx.fillStyle  = COLOURS.accentSoft;
-  ctx.font       = `500 20px ${FONT_MONO}`;
-  ctx.textAlign  = 'center';
+  ctx.fillStyle     = COLOURS.accentSoft;
+  ctx.font          = `500 20px ${FONT_MONO}`;
+  ctx.textAlign     = 'center';
   ctx.letterSpacing = '3px';
-  ctx.fillText(decision ? 'CHOOSE YOUR PATH' : 'SCENARIO COMPLETE', W / 2, 56);
+  ctx.fillText(decision ? hint ? '' : 'CHOOSE YOUR PATH' : 'SCENARIO COMPLETE', W / 2, 56);
   ctx.letterSpacing = '0px';
 
-  ctx.fillStyle  = COLOURS.heading;
-  ctx.font       = `700 54px ${FONT_HEAD}`;
-  ctx.fillText(decision ? prompt : '— End of scenario —', W / 2, 112);
+  if (hint) {
+    // --- TWO-LINE LAYOUT (Prompt + Hint) ---
+
+    // 1. Main Prompt 
+    ctx.fillStyle = COLOURS.heading;
+    ctx.font      = `800 54px ${FONT_HEAD}`;
+    ctx.fillText(decision ? prompt : '— End of scenario —', W / 2, 100);
+
+    // 2. Hint Text 
+    ctx.fillStyle = COLOURS.accentSoft;
+    ctx.font      = `300 24px ${FONT_HEAD}`;
+    ctx.fillText(hint, W / 2, 145);
+
+  } else {
+    // --- SINGLE-LINE FALLBACK (If hint is missing/empty) ---
+    ctx.fillStyle = COLOURS.heading;
+    ctx.font      = `700 54px ${FONT_HEAD}`;
+    ctx.fillText(decision ? prompt : '— End of scenario —', W / 2, 112);
+  }
 
   // Divider
   ctx.strokeStyle = COLOURS.border;
@@ -410,7 +427,7 @@ function drawDecisionPanel(sceneData, hovered = null) {
   panelButtons = [];
 
   /* ── Story choices (or terminal message) fill the middle area ── */
-  const choiceAreaTop    = 164;
+  const choiceAreaTop    = 180;
   const choiceAreaBottom = dividerY - 24;
   const gap              = 16;
 
@@ -475,7 +492,7 @@ function drawDecisionPanel(sceneData, hovered = null) {
         ctx.fillText(choice.label, textX, by + btnH / 2 - 6);
 
         // 2. Description (Smaller, muted text rendered below)
-        ctx.fillStyle = isHover ? COLOURS.accentSoft : COLOURS.subtext;
+        ctx.fillStyle = isHover ? COLOURS.text : COLOURS.subtext;
         ctx.font      = `400 20px ${FONT_HEAD}`;
         ctx.fillText(choice.desc, textX, by + btnH / 2 + 24);
 
