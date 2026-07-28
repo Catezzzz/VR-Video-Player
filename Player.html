@@ -131,9 +131,9 @@ const DECISION = {
   distance:  3.5,
   height:   -0.3,
   worldW:    4,
-  worldH:    3.12, //3.12 
+  worldH:    3.15, //3.12 
   canvasW:   1078,
-  canvasH:   818.4,//818.4  110+16
+  canvasH:   820,//818.4  110+16
 };
 
 // Opacity levels for transport bar
@@ -361,7 +361,7 @@ let hoveredBtn = null;
 function drawDecisionPanel(sceneData, hovered = null) {
   const ctx  = panelCtx;
   const W    = DECISION.canvasW;
-  const H    = DECISION.canvasH - 252;
+  const H    = DECISION.canvasH;
   ctx.clearRect(0, 0, W, H);
   sphereMat.color.setRGB(0.4, 0.4, 0.4);   // dim background to about 35% brightness
 
