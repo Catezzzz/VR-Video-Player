@@ -127,14 +127,26 @@ const TRANSPORT = {
 };
 
 // Decision panel config
+// Decision panel config — worldH/canvasH are no longer fixed; they're derived
+// per-scene from DECISION_LAYOUT based on how many choices the node has.
 const DECISION = {
   distance:  3.5,
   height:   -0.3,
   worldW:    4,
-  worldH:    3.15, //3.12 
   canvasW:   1078,
-  canvasH:   820,//818.4  110+16
 };
+
+// Controls how the decision panel's HEIGHT scales with choice count.
+const DECISION_LAYOUT = {
+  headerH:        180,   // kicker + prompt/hint + top divider
+  choiceBtnH:     110,   // ideal height per choice button
+  choiceGap:      16,    // gap between choice buttons
+  utilAreaH:      140,   // divider + Replay/Previous/Menu row + bottom margin
+  minCanvasH:     620,   // floor, so a 0-1 choice panel isn't a tiny sliver
+  maxCanvasH:     1000,  // ceiling, so a 6-choice panel doesn't dwarf the player
+  pixelsPerMeter: 260,   // keeps text/button scale consistent across sizes
+};
+
 
 // Opacity levels for transport bar
 const TRANSPORT_OPACITY_IDLE   = 0.18;  // when not hovered
@@ -358,10 +370,30 @@ function updatePanelOpacity() {
 ───────────────────────────────────────────── */
 let hoveredBtn = null;
 
+/* Compute canvas + world dimensions for the decision panel based on how
+   many choices the current node has. Width stays fixed; height grows (up
+   to a cap) with choice count so panels with more options get more room,
+   and short/terminal panels don't end up oversized. */
+   function computeDecisionDims(choiceCount) {
+  const L = DECISION_LAYOUT;
+  const n = Math.max(choiceCount, 1); // reserve at least one "slot" even for terminal/empty panels
+
+  const choicesTotal = n * L.choiceBtnH + (n - 1) * L.choiceGap;
+  let canvasH = L.headerH + choicesTotal + L.utilAreaH;
+  canvasH = Math.min(Math.max(canvasH, L.minCanvasH), L.maxCanvasH);
+
+  return {
+    canvasW: DECISION.canvasW,
+    canvasH,
+    worldW:  DECISION.worldW,
+    worldH:  canvasH / L.pixelsPerMeter,
+  };
+}
+
 function drawDecisionPanel(sceneData, hovered = null) {
   const ctx  = panelCtx;
-  const W    = DECISION.canvasW;
-  const H    = DECISION.canvasH;
+  const W    = panelCanvas.width;   // was: DECISION.canvasW
+  const H    = panelCanvas.height;  // was: DECISION.canvasH
   ctx.clearRect(0, 0, W, H);
   sphereMat.color.setRGB(0.4, 0.4, 0.4);   // dim background to about 35% brightness
 
@@ -763,7 +795,9 @@ async function goToPreviousOptions() {
     appState = State.DECISION;
     hoveredBtn = null;
     isPanelHovered = false;
-    createPanel(DECISION.worldW, DECISION.worldH, DECISION.canvasW, DECISION.canvasH);
+    const choiceCount = data.decision?.choices?.length || 0;
+    const dims = computeDecisionDims(choiceCount);
+    createPanel(dims.worldW, dims.worldH, dims.canvasW, dims.canvasH);
     if (panelMesh) panelMesh.material.opacity = 1.0;
     positionPanel();
     drawDecisionPanel(currentJSON, null);
@@ -1004,7 +1038,9 @@ function transitionToPlaying() {
 function transitionToDecision() {
   appState = State.DECISION;
   isPanelHovered = false;
-  createPanel(DECISION.worldW, DECISION.worldH, DECISION.canvasW, DECISION.canvasH);
+  const choiceCount = currentJSON.decision?.choices?.length || 0;
+  const dims = computeDecisionDims(choiceCount);
+  createPanel(dims.worldW, dims.worldH, dims.canvasW, dims.canvasH);
   if (panelMesh) panelMesh.material.opacity = 1.0;
   positionPanel();
   drawDecisionPanel(currentJSON, null);
