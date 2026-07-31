@@ -159,7 +159,7 @@ const TRANSPORT_OPACITY_ACTIVE = 1.0;   // when hovered
 const PANEL_FOLLOW = {
   posLambda:   3.0,   // higher = snappier catch-up, lower = laggier/floatier
   rotLambda:   3.0,
-  deadzoneDeg: 3,     // panel stays put until you look away more than this; 0 disables
+  deadzoneDeg: 4,     // panel stays put until you look away more than this; 0 disables
 };
 
 // Guided Coach design tokens (see design doc: indigo accent, dark navy panels,
@@ -566,8 +566,26 @@ const decision = sceneData.decision;
       roundRect(ctx, btnX, by, btnW, btnH, 30);
       ctx.stroke();
 
+            
+
+            // Measure label/desc text so the badge+text group can be centered
+      // as a block within the button, instead of pinned to the left.
+      const badgeGap = 20;
+      ctx.font = choice.desc
+        ? `${isHover ? 700 : 600} ${FONT_SIZES.choiceLabel}px ${FONT_HEAD}`
+        : `${isHover ? 700 : 200} ${FONT_SIZES.choiceLabelOnly}px ${FONT_HEAD}`;
+      let textBlockW = ctx.measureText(choice.label).width;
+      if (choice.desc) {
+        ctx.font = `400 ${FONT_SIZES.choiceDesc}px ${FONT_HEAD}`;
+        textBlockW = Math.max(textBlockW, ctx.measureText(choice.desc).width);
+      }
+      
+    
       // Lettered badge
-      const badgeSize = 55, badgeX = btnX + 30, badgeY = by + (btnH - badgeSize) / 2;
+      const badgeSize = 55;
+      const groupW    = badgeSize + badgeGap + textBlockW;
+      const groupX    = btnX + (btnW - groupW) / 2;
+      const badgeX = groupX, badgeY = by + (btnH - badgeSize) / 2;
       roundRect(ctx, badgeX, badgeY, badgeSize, badgeSize, 15);
       ctx.fillStyle = isHover ? COLOURS.accent : COLOURS.badgeBg;
       ctx.fill();
@@ -577,7 +595,7 @@ const decision = sceneData.decision;
       ctx.fillText(letter, badgeX + badgeSize / 2, badgeY + badgeSize / 2 + FONT_SIZES.badge/3);
 
       // Label X position (shared by label and description)
-      const textX = badgeX + badgeSize + 20;
+      const textX = badgeX + badgeSize + badgeGap;
 
       if (choice.desc) {
         // --- TWO-LINE LAYOUT (Label + Subtext Description) ---
