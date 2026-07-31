@@ -1,0 +1,21 @@
+{
+  "title": "Catching the Bus",
+  "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/Catching%20the%20Bus/Catching%20the%20bus%20before%20options.mp4",
+  "decision": {
+    "prompt": "What will you do?",
+    "choices": [
+      {
+        "label": "Correct her",
+        "next": "scenarios/catching-the-bus/OptionA.json"
+      },
+      {
+        "label": "Validate and redirect",
+        "next": "scenarios/catching-the-bus/OptionB.json"
+      },
+      {
+        "label": "Remain silent",
+        "next": "scenarios/catching-the-bus/OptionC.json"
+      }
+    ]
+  }
+}

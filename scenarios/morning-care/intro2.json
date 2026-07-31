@@ -1,19 +1,19 @@
 {
-  "title": "Intro2",
+  "title": "Morning Care: Intro 2",
   "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/Morning%20Care/2_morning%20care_before%20options.mp4",
   "decision": {
     "prompt": "What will you do?",
     "choices": [
       {
-        "label": "Option A",
+        "label": "Proceed with the wash",
         "next": "scenarios/morning-care/OptionA.json"
       },
       {
-        "label": "Option B",
+        "label": "Pause and Clarify",
         "next": "scenarios/morning-care/OptionB.json"
       },
       {
-        "label": "Option C",
+        "label": "Include family in care",
         "next": "scenarios/morning-care/OptionC.json"
       }
     ]

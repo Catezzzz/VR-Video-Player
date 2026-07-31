@@ -10,5 +10,11 @@
       "title": "Morning Care",
       "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
       "intro": "scenarios/morning-care/intro.json"
+    },
+    {
+      "id": "catching-the-bus",
+      "title": "Catching the Bus",
+      "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
+      "intro": "scenarios/catching-the-bus/intro.json"
     }
   ]

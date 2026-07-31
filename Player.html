@@ -233,6 +233,7 @@ const sphereGeo = new THREE.SphereGeometry(SPHERE_RADIUS, 64, 32);
 sphereGeo.scale(-1, 1, 1); // invert normals
 const sphereMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 const sphere    = new THREE.Mesh(sphereGeo, sphereMat);
+sphere.rotation.y = -Math.PI / 2; // ← tune this per your footage
 scene.add(sphere);
 
 /* ─────────────────────────────────────────────
