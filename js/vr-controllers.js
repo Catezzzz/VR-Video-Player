@@ -50,9 +50,10 @@ export function updateVRHover() {
     const uv = getHitUV();
     if (!uv) continue;
     panelHit = true;
-    const activeButtons = state.appState === State.DECISION ? state.panelButtons : state.transportButtons;
+    const usesPanelButtons = state.appState === State.DECISION || state.appState === State.LIBRARY;
+    const activeButtons = usesPanelButtons ? state.panelButtons : state.transportButtons;
     const idx = hitToButtonIndex(uv, activeButtons);
-    if (idx >= 0) { found = state.appState === State.DECISION ? idx : activeButtons[idx].id; break; }
+    if (idx >= 0) { found = usesPanelButtons ? idx : activeButtons[idx].id; break; }
   }
 
   const wasHovered = state.isPanelHovered;

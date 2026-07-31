@@ -175,9 +175,53 @@
     line-height: 1.6;
   }
   .state-msg strong { color: var(--heading); }
+
+  /* ── WebXR shell (Player engine, reused for the in-VR library) ──────── */
+  /* The renderer's canvas is appended to <body> by js/three-setup.js.
+     Keep it behind the flat grid until a VR session actually starts —
+     once presenting, the headset display takes over regardless. */
+  body > canvas { position: fixed; inset: 0; z-index: -1; }
+
+  #vr-btn {
+    display: none; /* shown once navigator.xr confirms immersive-vr support */
+    position: fixed;
+    top: 24px; right: 24px;
+    z-index: 10;
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 12px 22px;
+    cursor: pointer;
+    box-shadow: 0 10px 30px -14px rgba(76,111,255,0.7);
+    transition: background 0.15s, transform 0.15s;
+  }
+  #vr-btn:hover { background: #6483ff; transform: translateY(-1px); }
+
+  #overlay.hidden { display: none; }
 </style>
 </head>
 <body>
+
+<!-- Minimal DOM the shared Player engine (js/main.js) expects. Stays
+     hidden here — Menu.html's own grid below is the real flat UI; this
+     only becomes relevant once a WebXR session actually starts. -->
+<div id="overlay" class="hidden">
+  <h1 id="scene-title"></h1>
+  <p id="scene-desc"></p>
+  <div id="error-msg"></div>
+  <button id="play-btn" style="display:none"></button>
+  <button id="menu-btn" style="display:none"></button>
+  <p id="version-txt"></p>
+</div>
+<div id="loading-bar-wrap" style="position:fixed;top:0;left:0;right:0;height:3px;z-index:20;">
+  <div id="loading-bar" style="height:100%;width:0%;"></div>
+</div>
+
+<button id="vr-btn">Enter VR</button>
 
 <header>
   <div class="sprockets">
@@ -282,6 +326,20 @@
       console.error('[Menu]', err);
     });
 </script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+  }
+}
+</script>
+
+<!-- Same engine Player.html boots. With no ?scenario= in the URL it stays
+     idle in flat mode; tapping Enter VR (above) drops straight into the
+     in-VR library instead of playing a video — see js/scene-loader.js. -->
+<script type="module" src="js/main.js"></script>
 
 </body>
 </html>

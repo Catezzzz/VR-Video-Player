@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { scene, camera } from './three-setup.js';
 import { state, State } from './state.js';
-import { TRANSPORT, DECISION, PANEL_FOLLOW, TRANSPORT_OPACITY_IDLE, TRANSPORT_OPACITY_ACTIVE } from './config.js';
+import { TRANSPORT, DECISION, LIBRARY, PANEL_FOLLOW, TRANSPORT_OPACITY_IDLE, TRANSPORT_OPACITY_ACTIVE } from './config.js';
 
 export function disposePanelMesh() {
   if (state.panelMesh) {
@@ -40,7 +40,9 @@ const _panelTarget = new THREE.Object3D();
 
 export function positionPanel(dt = 1 / 60) {
   if (!state.panelMesh) return;
-  const cfg = state.appState === State.PLAYING ? TRANSPORT : DECISION;
+  const cfg = state.appState === State.PLAYING ? TRANSPORT
+            : state.appState === State.LIBRARY ? LIBRARY
+            : DECISION;
 
   const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
   dir.y = 0;

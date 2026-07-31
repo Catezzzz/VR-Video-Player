@@ -14,6 +14,7 @@ import {
   titleEl, descEl, errorEl, playBtnEl, menuBtnEl, loadBar, vrBtnEl,
   overlay, showOverlay, hideOverlay, setLoadProgress,
 } from './overlay.js';
+import { enterLibrary } from './library.js';
 
 export async function loadScene(jsonPath) {
   state.appState = State.LOADING;
@@ -159,6 +160,10 @@ vrBtnEl.addEventListener('click', () => {
       if (state.appState === State.LOADING || video.readyState >= 3) {
         video.play().catch(() => {});
         transitionToPlaying();
+      } else if (state.appState === State.BOOT) {
+        // Nothing loaded yet — this is a library entry point (Menu.html,
+        // or Player.html opened with no ?scenario=).
+        enterLibrary();
       }
     });
 });

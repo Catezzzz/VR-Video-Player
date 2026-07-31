@@ -102,7 +102,30 @@ export const FONT_SIZES = {
   transportIcon:   22,
 };
 
+// Path to the manifest listing all available scenarios — shared by
+// Menu.html's flat grid and the in-VR library panel.
+export const MANIFEST_URL = 'scenarios/scenarios.json';
+
+// In-VR library panel placement/sizing (same idea as TRANSPORT/DECISION).
+export const LIBRARY = {
+  distance: 4.5,
+  height:  -0.2,
+  worldW:   4.2,
+  canvasW:  1200,
+};
+export const LIBRARY_LAYOUT = {
+  headerH:    160,   // kicker + title + top divider
+  cardH:      130,   // per-scenario card height
+  cardGap:    18,
+  minCanvasH: 640,
+  maxCanvasH: 1200,
+};
+
 /* URL params */
 const params = new URLSearchParams(location.search);
-export const ROOT_JSON = params.get('scenario') || 'scenarios/catching-the-bus/intro.json';
-export const MENU_URL  = params.get('menu')     || 'menu.html';
+// Raw value (no fallback) — lets main.js tell "load this scenario" apart
+// from "no scenario given, show the library" instead of always falling
+// back to a default scenario.
+export const SCENARIO_PARAM = params.get('scenario');
+export const ROOT_JSON = SCENARIO_PARAM || 'scenarios/catching-the-bus/intro.json';
+export const MENU_URL  = params.get('menu') || 'Menu.html';

@@ -3,12 +3,15 @@
 // so mutating a property (state.appState = ...) is visible everywhere —
 // this replaces the module-scope `let` variables from the single-file version.
 
-export const State = { BOOT: 'boot', LOADING: 'loading', PLAYING: 'playing', DECISION: 'decision', ENDED: 'ended' };
+export const State = { BOOT: 'boot', LOADING: 'loading', PLAYING: 'playing', DECISION: 'decision', ENDED: 'ended', LIBRARY: 'library' };
 
 export const state = {
   appState:    State.BOOT,
   currentJSON: null,   // parsed JSON for active scene
   currentPath: null,   // path of active scene JSON
+
+  // Cached scenarios.json manifest, once fetched by the in-VR library panel.
+  libraryEntries: null,
 
   // Stack of decision-node paths the user has passed through, used by the
   // "Previous Options" button. Pushed on a story choice, popped on back-nav.

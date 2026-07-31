@@ -10,7 +10,7 @@ import './overlay.js';
 import './interaction.js';
 import { scene, camera, renderer } from './three-setup.js';
 import { state, State } from './state.js';
-import { ROOT_JSON } from './config.js';
+import { SCENARIO_PARAM, ROOT_JSON } from './config.js';
 import { loadScene } from './scene-loader.js';
 import { positionPanel, updatePanelOpacity } from './panel-mesh.js';
 import { drawTransportBar } from './draw-transport.js';
@@ -44,4 +44,9 @@ renderer.setAnimationLoop((time) => {
 });
 
 /* ─── Boot ─────────────────────────────────────────────────────────────── */
-loadScene(ROOT_JSON);
+if (SCENARIO_PARAM) {
+  loadScene(ROOT_JSON);
+}
+// else: idle boot. Used by Menu.html, and by Player.html opened with no
+// ?scenario=. The shared Enter VR handler in scene-loader.js drops
+// straight into the in-VR library instead of playing a video.

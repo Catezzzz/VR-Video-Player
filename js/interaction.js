@@ -12,6 +12,7 @@ import { drawDecisionPanel, computeDecisionDims } from './draw-decision.js';
 import { drawTransportBar } from './draw-transport.js';
 import { createPanel, positionPanel } from './panel-mesh.js';
 import { loadScene } from './scene-loader.js';
+import { enterLibrary, drawLibraryPanel } from './library.js';
 
 export const raycaster = new THREE.Raycaster();
 const mouse2D = new THREE.Vector2();
@@ -49,9 +50,10 @@ renderer.domElement.addEventListener('mousemove', e => {
     return;
   }
 
-  const activeButtons = state.appState === State.DECISION ? state.panelButtons : state.transportButtons;
+  const usesPanelButtons = state.appState === State.DECISION || state.appState === State.LIBRARY;
+  const activeButtons = usesPanelButtons ? state.panelButtons : state.transportButtons;
   const idx = hitToButtonIndex(uv, activeButtons);
-  const id  = idx >= 0 ? (state.appState === State.DECISION ? idx : activeButtons[idx].id) : null;
+  const id  = idx >= 0 ? (usesPanelButtons ? idx : activeButtons[idx].id) : null;
 
   if (id !== state.hoveredBtn || wasHovered !== state.isPanelHovered) {
     state.hoveredBtn = id;
@@ -77,12 +79,25 @@ export function handlePanelClick() {
     const idx = hitToButtonIndex(uv, state.transportButtons);
     if (idx < 0) return;
     onTransportAction(state.transportButtons[idx], uv);
+  } else if (state.appState === State.LIBRARY) {
+    const idx = hitToButtonIndex(uv, state.panelButtons);
+    if (idx < 0) return;
+    state.decisionHistory = []; // fresh run starting from the library
+    loadScene(state.panelButtons[idx].next);
   }
 }
 
 function onChoiceSelected(btn) {
   if (btn.action === 'menu') {
-    if (MENU_URL) location.href = MENU_URL;
+    // Presenting in VR: swap the panel back to the library in the same
+    // document/session instead of navigating away and ending it. Only
+    // fall back to a real page nav for flat/desktop use, where there's
+    // no session to protect.
+    if (renderer.xr.isPresenting) {
+      enterLibrary();
+    } else if (MENU_URL) {
+      location.href = MENU_URL;
+    }
     return;
   }
   if (btn.action === 'replay') {
@@ -150,5 +165,7 @@ export function redrawPanel() {
     drawDecisionPanel(state.currentJSON, state.hoveredBtn);
   } else if (state.appState === State.PLAYING) {
     drawTransportBar(state.hoveredBtn);
+  } else if (state.appState === State.LIBRARY) {
+    drawLibraryPanel(state.libraryEntries, state.hoveredBtn);
   }
 }
