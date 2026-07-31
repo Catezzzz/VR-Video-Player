@@ -139,7 +139,7 @@ const DECISION = {
 // Controls how the decision panel's HEIGHT scales with choice count.
 const DECISION_LAYOUT = {
   headerH:        180,   // kicker + prompt/hint + top divider
-  choiceBtnH:     110,   // ideal height per choice button
+  choiceBtnH:     120,   // ideal height per choice button
   choiceGap:      16,    // gap between choice buttons
   utilAreaH:      140,   // divider + Replay/Previous/Menu row + bottom margin
   minCanvasH:     620,   // floor, so a 0-1 choice panel isn't a tiny sliver
@@ -489,7 +489,7 @@ const decision = sceneData.decision;
     const naturalTotal = choices.length * 80 + (choices.length - 1) * gap;
     const btnH = naturalTotal > available
       ? (available - (choices.length - 1) * gap) / choices.length
-      : 110;
+      : DECISION_LAYOUT.choiceBtnH;
     const btnX = 60;
     const btnW = W - 120;
 
