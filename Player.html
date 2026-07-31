@@ -184,6 +184,26 @@ const COLOURS = {
 const FONT_HEAD = "'Space Grotesk', system-ui, sans-serif";
 const FONT_MONO = "'IBM Plex Mono', monospace";
 
+// Canvas text sizes (px). Centralised here so panel typography can be
+// tuned in one place instead of hunting through draw calls.
+const FONT_SIZES = {
+  // Decision panel
+  kicker:          20,  // "CHOOSE YOUR PATH" / "SCENARIO COMPLETE" label
+  prompt:          54,  // main prompt headline (both hint and no-hint layouts)
+  hint:            24,  // hint sub-line under the prompt
+  badge:           28,  // lettered A/B/C badge
+  choiceLabel:     24,  // choice label when a description is present
+  choiceDesc:      20,  // choice description text
+  choiceLabelOnly: 32,  // choice label when there's no description (single line)
+  choiceArrow:     24,  // trailing "→" on hovered choice
+  emptyState:      26,  // "Choose an option below" fallback text
+  utilButton:      28,  // Replay / Previous Options / Menu row
+
+  // Transport bar
+  transportTime:   19,  // "0:00 / 1:23" timestamp
+  transportIcon:   22,  // play/pause & mute glyphs
+};
+
 /* ─────────────────────────────────────────────
    URL PARAMS
 ───────────────────────────────────────────── */
@@ -396,7 +416,7 @@ function drawDecisionPanel(sceneData, hovered = null) {
   const W    = panelCanvas.width;   // was: DECISION.canvasW
   const H    = panelCanvas.height;  // was: DECISION.canvasH
   ctx.clearRect(0, 0, W, H);
-  sphereMat.color.setRGB(0.4, 0.4, 0.4);   // dim background to about 35% brightness
+  sphereMat.color.setRGB(0.35, 0.35, 0.35);   // dim background to about 35% brightness
 
   // Background — dark navy card with soft radial lift, per design tokens
   const bgGrad = ctx.createRadialGradient(W/2, H*0.3, 0, W/2, H*0.3, W*0.75);
@@ -419,7 +439,7 @@ const decision = sceneData.decision;
   const hint     = decision?.hint;
 
   ctx.fillStyle     = COLOURS.accentSoft;
-  ctx.font          = `500 20px ${FONT_MONO}`;
+  ctx.font          = `500 ${FONT_SIZES.kicker}px ${FONT_MONO}`;
   ctx.textAlign     = 'center';
   ctx.letterSpacing = '3px';
   ctx.fillText(decision ? hint ? '' : 'CHOOSE YOUR PATH' : 'SCENARIO COMPLETE', W / 2, 56);
@@ -430,18 +450,18 @@ const decision = sceneData.decision;
 
     // 1. Main Prompt 
     ctx.fillStyle = COLOURS.heading;
-    ctx.font      = `800 54px ${FONT_HEAD}`;
+    ctx.font      = `800 ${FONT_SIZES.prompt}px ${FONT_HEAD}`;
     ctx.fillText(decision ? prompt : '— End of scenario —', W / 2, 100);
 
     // 2. Hint Text 
     ctx.fillStyle = COLOURS.accentSoft;
-    ctx.font      = `300 24px ${FONT_HEAD}`;
+    ctx.font      = `300 ${FONT_SIZES.hint}px ${FONT_HEAD}`;
     ctx.fillText(hint, W / 2, 145);
 
   } else {
     // --- SINGLE-LINE FALLBACK (If hint is missing/empty) ---
     ctx.fillStyle = COLOURS.heading;
-    ctx.font      = `700 54px ${FONT_HEAD}`;
+    ctx.font      = `700 ${FONT_SIZES.prompt}px ${FONT_HEAD}`;
     ctx.fillText(decision ? prompt : '— End of scenario —', W / 2, 112);
   }
 
@@ -508,9 +528,9 @@ const decision = sceneData.decision;
       ctx.fillStyle = isHover ? COLOURS.accent : COLOURS.badgeBg;
       ctx.fill();
       ctx.fillStyle = isHover ? '#ffffff' : COLOURS.badgeText;
-      ctx.font      = `700 22px ${FONT_HEAD}`;
+      ctx.font      = `700 ${FONT_SIZES.badge}px ${FONT_HEAD}`;
       ctx.textAlign = 'center';
-      ctx.fillText(letter, badgeX + badgeSize / 2, badgeY + badgeSize / 2 + 6);
+      ctx.fillText(letter, badgeX + badgeSize / 2, badgeY + badgeSize / 2 + FONT_SIZES.badge/3);
 
       // Label X position (shared by label and description)
       const textX = badgeX + badgeSize + 20;
@@ -520,19 +540,19 @@ const decision = sceneData.decision;
         
         // 1. Label (Shifted up slightly)
         ctx.fillStyle = isHover ? '#ffffff' : COLOURS.text;
-        ctx.font      = `${isHover ? 700 : 600} 24px ${FONT_HEAD}`;
+        ctx.font      = `${isHover ? 700 : 600} ${FONT_SIZES.choiceLabel}px ${FONT_HEAD}`;
         ctx.textAlign = 'left';
         ctx.fillText(choice.label, textX, by + btnH / 2 - 6);
 
         // 2. Description (Smaller, muted text rendered below)
         ctx.fillStyle = isHover ? COLOURS.text : COLOURS.subtext;
-        ctx.font      = `400 20px ${FONT_HEAD}`;
+        ctx.font      = `400 ${FONT_SIZES.choiceDesc}px ${FONT_HEAD}`;
         ctx.fillText(choice.desc, textX, by + btnH / 2 + 24);
 
       } else {
         // --- SINGLE-LINE FALLBACK (If choice.desc is missing or empty) ---
         ctx.fillStyle = isHover ? '#ffffff' : COLOURS.text;
-        ctx.font      = `${isHover ? 700 : 600} 26px ${FONT_HEAD}`;
+        ctx.font      = `${isHover ? 700 : 200} ${FONT_SIZES.choiceLabelOnly}px ${FONT_HEAD}`;
         ctx.textAlign = 'left';
         ctx.fillText(choice.label, textX, by + btnH / 2 + 9);
       }
@@ -540,7 +560,7 @@ const decision = sceneData.decision;
       // Trailing arrow — only lit up on hover/selected
       if (isHover) {
         ctx.fillStyle  = COLOURS.success;
-        ctx.font       = `500 24px ${FONT_HEAD}`;
+        ctx.font       = `500 ${FONT_SIZES.choiceArrow}px ${FONT_HEAD}`;
         ctx.textAlign  = 'right';
         ctx.fillText('→', btnX + btnW - 24, by + btnH / 2 + 9);
       }
@@ -553,7 +573,7 @@ const decision = sceneData.decision;
     });
   } else {
     ctx.fillStyle = COLOURS.subtext;
-    ctx.font      = `400 26px ${FONT_HEAD}`;
+    ctx.font      = `400 ${FONT_SIZES.emptyState}px ${FONT_HEAD}`;
     ctx.textAlign = 'center';
     ctx.fillText('Choose an option below', W / 2, (choiceAreaTop + choiceAreaBottom) / 2 + 8);
   }
@@ -593,7 +613,7 @@ const decision = sceneData.decision;
     ctx.stroke();
 
     ctx.fillStyle = isHover ? '#ffffff' : COLOURS.badgeText;
-    ctx.font      = `400 21px ${FONT_HEAD}`;
+    ctx.font      = `400 ${FONT_SIZES.utilButton}px ${FONT_HEAD}`;
     ctx.textAlign = 'center';
     ctx.fillText(item.label, bx + utilBtnW / 2, utilY + UTIL_H / 2 + 7);
 
@@ -662,7 +682,7 @@ function drawTransportBar(hovered = null) {
 
   // Time label
   const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-  ctx.fillStyle = COLOURS.accentSoft; ctx.font = `400 19px ${FONT_MONO}`; ctx.textAlign = 'left';
+  ctx.fillStyle = COLOURS.accentSoft; ctx.font = `400 ${FONT_SIZES.transportTime}px ${FONT_MONO}`; ctx.textAlign = 'left';
   ctx.fillText(`${fmt(cur)} / ${fmt(dur)}`, pX, 78);
 
   // Buttons: Play/Pause | Mute — square icon tiles per the "Icon 40²" component
@@ -679,7 +699,7 @@ function drawTransportBar(hovered = null) {
     ctx.fillStyle   = isH ? COLOURS.btnHover : COLOURS.btnBg; ctx.fill();
     ctx.strokeStyle = isH ? COLOURS.accent : COLOURS.border; ctx.lineWidth = isH ? 1.5 : 1; ctx.stroke();
     ctx.fillStyle   = isH ? COLOURS.accentSoft : COLOURS.badgeText;
-    ctx.font        = '22px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.font        = `${FONT_SIZES.transportIcon}px system-ui, sans-serif`; ctx.textAlign = 'center';
     ctx.fillText(b.label, b.x + BTN_W / 2, BTN_Y + BTN_H / 2 + 8);
     transportButtons.push({ x: b.x, y: BTN_Y, w: BTN_W, h: BTN_H, id: b.id, label: b.label });
   });
