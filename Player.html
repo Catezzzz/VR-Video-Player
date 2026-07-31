@@ -111,7 +111,7 @@ import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFa
 /* ─────────────────────────────────────────────
    CONSTANTS & CONFIG
 ───────────────────────────────────────────── */
-const VERSION = '0.4';
+const VERSION = '0.5';
 const SPHERE_RADIUS = 50;
 
 // Transport bar config
@@ -151,6 +151,16 @@ const DECISION_LAYOUT = {
 // Opacity levels for transport bar
 const TRANSPORT_OPACITY_IDLE   = 0.18;  // when not hovered
 const TRANSPORT_OPACITY_ACTIVE = 1.0;   // when hovered
+
+// Panel follow behaviour — instead of snapping to be exactly in front of the
+// camera every frame, the panel eases toward its "ideal" spot, and can also
+// sit still until you've turned away past a deadzone angle. Tune per-cfg
+// below if you want the transport bar and decision panel to feel different.
+const PANEL_FOLLOW = {
+  posLambda:   1.0,   // higher = snappier catch-up, lower = laggier/floatier
+  rotLambda:   1.0,
+  deadzoneDeg: 3.5,     // panel stays put until you look away more than this; 0 disables
+};
 
 // Guided Coach design tokens (see design doc: indigo accent, dark navy panels,
 // Space Grotesk for headings/labels, IBM Plex Mono for kickers & timestamps).
@@ -359,16 +369,50 @@ function createPanel(worldW, worldH, canvasW, canvasH) {
   scene.add(panelMesh);
 }
 
-function positionPanel() {
+// Reusable scratch object for computing the panel's "ideal" orientation
+// without allocating a new Object3D every frame.
+const _panelTarget = new THREE.Object3D();
+
+function positionPanel(dt = 1 / 60) {
   if (!panelMesh) return;
   const cfg = appState === State.PLAYING ? TRANSPORT : DECISION;
+
   const dir = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
   dir.y = 0;
   dir.normalize();
+
   const camPos = camera.getWorldPosition(new THREE.Vector3());
-  panelMesh.position.copy(camPos).addScaledVector(dir, cfg.distance);
-  panelMesh.position.y += cfg.height;
-  panelMesh.lookAt(camPos);
+  const idealPos = camPos.clone().addScaledVector(dir, cfg.distance);
+  idealPos.y += cfg.height;
+
+  _panelTarget.position.copy(idealPos);
+  _panelTarget.lookAt(camPos);
+  const idealQuat = _panelTarget.quaternion;
+
+  // Right after (re)creating the panel mesh, snap into place instead of
+  // easing in from nowhere — avoids a weird slide-in on every scene change.
+  if (!panelMesh.userData.followInit) {
+    panelMesh.position.copy(idealPos);
+    panelMesh.quaternion.copy(idealQuat);
+    panelMesh.userData.followInit = true;
+    return;
+  }
+
+  // Deadzone: only start chasing once the ideal spot has drifted far
+  // enough from where the panel currently sits. Keeps the panel perfectly
+  // still most of the time — it only moves when you've really turned away.
+  if (PANEL_FOLLOW.deadzoneDeg > 0) {
+    const toPanel = panelMesh.position.clone().sub(camPos).normalize();
+    const angle = THREE.MathUtils.radToDeg(dir.angleTo(toPanel));
+    if (angle < PANEL_FOLLOW.deadzoneDeg) return;
+  }
+
+  // Frame-rate independent exponential smoothing (not a flat lerp %),
+  // so the motion feels the same whether the headset renders at 72Hz or 90Hz.
+  const posT = 1 - Math.exp(-PANEL_FOLLOW.posLambda * dt);
+  const rotT = 1 - Math.exp(-PANEL_FOLLOW.rotLambda * dt);
+  panelMesh.position.lerp(idealPos, posT);
+  panelMesh.quaternion.slerp(idealQuat, rotT);
 }
 
 /* Update panel mesh opacity based on hover state (transport bar only) */
@@ -522,7 +566,7 @@ const decision = sceneData.decision;
       roundRect(ctx, btnX, by, btnW, btnH, 30);
       ctx.stroke();
 
-      
+            
 
             // Measure label/desc text so the badge+text group can be centered
       // as a block within the button, instead of pinned to the left.
@@ -1111,11 +1155,17 @@ function showError(msg) {
    RENDER LOOP
 ───────────────────────────────────────────── */
 let lastTransportUpdate = 0;
+let lastFrameTime = 0;
 renderer.setAnimationLoop((time) => {
+  // time is a raw timestamp (ms), not elapsed time — derive dt in seconds,
+  // clamped so a tab switch or XR session hiccup can't cause a huge jump.
+  const dt = lastFrameTime ? Math.min((time - lastFrameTime) / 1000, 0.1) : 1 / 60;
+  lastFrameTime = time;
+
   updateVRHover();
 
-  // Keep panel facing camera
-  if (panelMesh) positionPanel();
+  // Keep panel easing toward the camera-relative "ideal" spot
+  if (panelMesh) positionPanel(dt);
 
   // Smoothly animate transport bar opacity every frame
   updatePanelOpacity();
