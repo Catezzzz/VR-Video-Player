@@ -2,7 +2,7 @@
 // All tunable constants and URL params live here so behaviour/design tweaks
 // don't require hunting through logic files.
 
-export const VERSION = '0.9';
+export const VERSION = '0.10';
 export const SPHERE_RADIUS = 50;
 
 // Transport bar config
