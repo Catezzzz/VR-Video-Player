@@ -51,7 +51,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 // on the sphere and skew everything into an oval.
 export let loadingTexture = null;
 
-const LOADING_IMAGE_SIZE = 0.3;      // 0–1, fraction of canvas height the image occupies (smaller = smaller image)
+const LOADING_IMAGE_SIZE = 0.2;      // 0–1, fraction of canvas height the image occupies (smaller = smaller image)
 const LOADING_BG_COLOR   = '#ffffff'; // background behind the image — set to '#0d0e11' for dark theme
 
 const loadingCanvas = document.createElement('canvas');
