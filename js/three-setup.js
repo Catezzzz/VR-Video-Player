@@ -44,20 +44,47 @@ videoTexture.colorSpace = THREE.SRGBColorSpace;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 /* ─── Optional loading image texture ────────────────────────────────────── */
+// The raw image is composited onto a square canvas with a solid background,
+// so you control how big it appears on the sphere instead of it stretching
+// edge-to-edge across the whole 360° view.
 export let loadingTexture = null;
-const textureLoader = new THREE.TextureLoader();
-textureLoader.load(
-  'assets/logo.png',
-  (texture) => {
-    loadingTexture = texture;
-    loadingTexture.colorSpace = THREE.SRGBColorSpace;
-  },
-  undefined,
-  () => {
-    // Silently fail if loading.png doesn't exist — just use white screen
-    console.warn('Optional: Add assets/loading.png for custom loading screen');
-  }
-);
+
+const LOADING_IMAGE_SIZE = 0.35;      // 0–1, fraction of canvas the image occupies (smaller = smaller image)
+const LOADING_BG_COLOR   = '#0d0e11'; // background behind the image
+
+const loadingCanvas = document.createElement('canvas');
+loadingCanvas.width = 1024;
+loadingCanvas.height = 1024;
+const loadingCtx = loadingCanvas.getContext('2d');
+
+const loadingImg = new Image();
+loadingImg.onload = () => {
+  const ctx = loadingCtx;
+  const cw = loadingCanvas.width, ch = loadingCanvas.height;
+
+  ctx.fillStyle = LOADING_BG_COLOR;
+  ctx.fillRect(0, 0, cw, ch);
+
+  // Fit the image within a centered box of side (cw * LOADING_IMAGE_SIZE),
+  // preserving its aspect ratio.
+  const boxW = cw * LOADING_IMAGE_SIZE;
+  const boxH = ch * LOADING_IMAGE_SIZE;
+  const scale = Math.min(boxW / loadingImg.width, boxH / loadingImg.height);
+  const drawW = loadingImg.width * scale;
+  const drawH = loadingImg.height * scale;
+  const dx = (cw - drawW) / 2;
+  const dy = (ch - drawH) / 2;
+
+  ctx.drawImage(loadingImg, dx, dy, drawW, drawH);
+
+  loadingTexture = new THREE.CanvasTexture(loadingCanvas);
+  loadingTexture.colorSpace = THREE.SRGBColorSpace;
+};
+loadingImg.onerror = () => {
+  // Silently do nothing if loading.png doesn't exist — falls back to white screen.
+  console.warn('Optional: Add assets/loading.png for custom loading screen');
+};
+loadingImg.src = 'assets/loading.png';
 
 /* ─── Desktop look controls (mouse + touch drag) ─────────────────────── */
 const euler  = new THREE.Euler(0, 0, 0, 'YXZ');
