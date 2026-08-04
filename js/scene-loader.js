@@ -6,7 +6,7 @@
 
 import { state, State } from './state.js';
 import { MENU_URL, TRANSPORT, TRANSPORT_OPACITY_IDLE } from './config.js';
-import { video, videoTexture, sphereMat, renderer } from './three-setup.js';
+import { video, videoTexture, sphereMat, renderer, loadingTexture } from './three-setup.js';
 import { createPanel, disposePanelMesh, positionPanel } from './panel-mesh.js';
 import { drawDecisionPanel, computeDecisionDims } from './draw-decision.js';
 import { drawTransportBar } from './draw-transport.js';
@@ -26,7 +26,12 @@ export async function loadScene(jsonPath) {
   // Stop old video
   video.pause();
   video.src = '';
-  sphereMat.map = null;
+  // Show loading image if available, otherwise white screen
+  if (loadingTexture) {
+    sphereMat.map = loadingTexture;
+  } else {
+    sphereMat.map = null;
+  }
   sphereMat.needsUpdate = true;
 
   showOverlay('Loading…', jsonPath);

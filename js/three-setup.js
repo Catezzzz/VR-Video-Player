@@ -43,6 +43,22 @@ export const videoTexture = new THREE.VideoTexture(video);
 videoTexture.colorSpace = THREE.SRGBColorSpace;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
+/* ─── Optional loading image texture ────────────────────────────────────── */
+export let loadingTexture = null;
+const textureLoader = new THREE.TextureLoader();
+textureLoader.load(
+  'assets/loading.png',
+  (texture) => {
+    loadingTexture = texture;
+    loadingTexture.colorSpace = THREE.SRGBColorSpace;
+  },
+  undefined,
+  () => {
+    // Silently fail if loading.png doesn't exist — just use white screen
+    console.warn('Optional: Add assets/loading.png for custom loading screen');
+  }
+);
+
 /* ─── Desktop look controls (mouse + touch drag) ─────────────────────── */
 const euler  = new THREE.Euler(0, 0, 0, 'YXZ');
 let dragging = false, lastX = 0, lastY = 0;
