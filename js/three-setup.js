@@ -44,16 +44,18 @@ videoTexture.colorSpace = THREE.SRGBColorSpace;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 /* ─── Optional loading image texture ────────────────────────────────────── */
-// The raw image is composited onto a square canvas with a solid background,
-// so you control how big it appears on the sphere instead of it stretching
-// edge-to-edge across the whole 360° view.
+// The raw image is composited onto a canvas with a solid background, then
+// mapped onto the sphere. The sphere uses equirectangular UVs (360° wide,
+// 180° tall — a 2:1 aspect ratio), so the canvas MUST also be 2:1 or the
+// image will stretch/skew horizontally. A square canvas would double-wide
+// on the sphere and skew everything into an oval.
 export let loadingTexture = null;
 
-const LOADING_IMAGE_SIZE = 0.35;      // 0–1, fraction of canvas the image occupies (smaller = smaller image)
-const LOADING_BG_COLOR   = '#0d0e11'; // background behind the image
+const LOADING_IMAGE_SIZE = 0.35;      // 0–1, fraction of canvas height the image occupies (smaller = smaller image)
+const LOADING_BG_COLOR   = '#ffffff'; // background behind the image — set to '#0d0e11' for dark theme
 
 const loadingCanvas = document.createElement('canvas');
-loadingCanvas.width = 1024;
+loadingCanvas.width  = 2048; // 2:1 aspect to match the sphere's equirectangular UVs
 loadingCanvas.height = 1024;
 const loadingCtx = loadingCanvas.getContext('2d');
 
@@ -65,11 +67,10 @@ loadingImg.onload = () => {
   ctx.fillStyle = LOADING_BG_COLOR;
   ctx.fillRect(0, 0, cw, ch);
 
-  // Fit the image within a centered box of side (cw * LOADING_IMAGE_SIZE),
-  // preserving its aspect ratio.
-  const boxW = cw * LOADING_IMAGE_SIZE;
-  const boxH = ch * LOADING_IMAGE_SIZE;
-  const scale = Math.min(boxW / loadingImg.width, boxH / loadingImg.height);
+  // Fit the image within a centered box (sized off canvas HEIGHT, since
+  // that's the shorter dimension), preserving its aspect ratio.
+  const boxSide = ch * LOADING_IMAGE_SIZE;
+  const scale = Math.min(boxSide / loadingImg.width, boxSide / loadingImg.height);
   const drawW = loadingImg.width * scale;
   const drawH = loadingImg.height * scale;
   const dx = (cw - drawW) / 2;
