@@ -47,7 +47,7 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 export let loadingTexture = null;
 const textureLoader = new THREE.TextureLoader();
 textureLoader.load(
-  'assets/loading.png',
+  'assets/logo.png',
   (texture) => {
     loadingTexture = texture;
     loadingTexture.colorSpace = THREE.SRGBColorSpace;
