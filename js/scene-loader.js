@@ -15,6 +15,7 @@ import {
   overlay, showOverlay, hideOverlay, setLoadProgress,
 } from './overlay.js';
 import { enterLibrary } from './library.js';
+import { createGearButton } from './settings.js';
 
 export async function loadScene(jsonPath) {
   state.appState = State.LOADING;
@@ -126,6 +127,7 @@ export function transitionToDecision() {
   if (state.panelMesh) state.panelMesh.material.opacity = 1.0;
   positionPanel();
   drawDecisionPanel(state.currentJSON, null);
+  createGearButton();
 }
 
 /* Video ended → decide what happens next */

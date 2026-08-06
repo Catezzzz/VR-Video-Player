@@ -6,10 +6,21 @@
 import * as THREE from 'three';
 import { scene, camera } from './three-setup.js';
 import { state, State } from './state.js';
-import { TRANSPORT, DECISION, LIBRARY, PANEL_FOLLOW, TRANSPORT_OPACITY_IDLE, TRANSPORT_OPACITY_ACTIVE } from './config.js';
+import { TRANSPORT, DECISION, LIBRARY, SETTINGS, PANEL_FOLLOW, TRANSPORT_OPACITY_IDLE, TRANSPORT_OPACITY_ACTIVE, getDistanceOffset } from './config.js';
 
 export function disposePanelMesh() {
   if (state.panelMesh) {
+    // Dispose any attached children generically (currently just the
+    // decision-panel gear button) — this module doesn't need to know
+    // what they are, only that they came along for the ride.
+    for (const child of [...state.panelMesh.children]) {
+      state.panelMesh.remove(child);
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) {
+        if (child.material.map) child.material.map.dispose();
+        child.material.dispose();
+      }
+    }
     scene.remove(state.panelMesh);
     state.panelMesh.geometry.dispose();
     state.panelMesh.material.dispose();
@@ -17,6 +28,13 @@ export function disposePanelMesh() {
     state.panelMesh = null;
     state.panelTex  = null;
   }
+  // The gear mesh (if any) was just disposed above as a child — clear the
+  // stale state fields pointing at it so nothing else references it.
+  state.gearMesh    = null;
+  state.gearCanvas  = null;
+  state.gearCtx     = null;
+  state.gearTex     = null;
+  state.gearHovered = false;
 }
 
 export function createPanel(worldW, worldH, canvasW, canvasH) {
@@ -40,7 +58,8 @@ const _panelTarget = new THREE.Object3D();
 
 export function positionPanel(dt = 1 / 60) {
   if (!state.panelMesh) return;
-  const cfg = state.appState === State.PLAYING ? TRANSPORT
+  const cfg = state.settingsOpen ? SETTINGS
+            : state.appState === State.PLAYING ? TRANSPORT
             : state.appState === State.LIBRARY ? LIBRARY
             : DECISION;
 
@@ -49,7 +68,7 @@ export function positionPanel(dt = 1 / 60) {
   dir.normalize();
 
   const camPos = camera.getWorldPosition(new THREE.Vector3());
-  const idealPos = camPos.clone().addScaledVector(dir, cfg.distance);
+  const idealPos = camPos.clone().addScaledVector(dir, cfg.distance + getDistanceOffset());
   idealPos.y += cfg.height;
 
   _panelTarget.position.copy(idealPos);
@@ -84,12 +103,12 @@ export function positionPanel(dt = 1 / 60) {
 /* Update panel mesh opacity based on hover state (transport bar only) */
 export function updatePanelOpacity() {
   if (!state.panelMesh) return;
-  if (state.appState === State.PLAYING) {
+  if (state.appState === State.PLAYING && !state.settingsOpen) {
     const target = state.isPanelHovered ? TRANSPORT_OPACITY_ACTIVE : TRANSPORT_OPACITY_IDLE;
     const current = state.panelMesh.material.opacity;
     state.panelMesh.material.opacity = current + (target - current) * 0.12;
   } else {
-    // Decision panel is always fully opaque
+    // Decision panel / library / settings are always fully opaque
     state.panelMesh.material.opacity = 1.0;
   }
 }

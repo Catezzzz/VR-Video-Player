@@ -29,4 +29,25 @@ export const state = {
   panelTex:    null,
   panelButtons:     [], // [{ x, y, w, h, id, label, next }] in canvas coords
   transportButtons: [],
+
+  // Committed user settings (font size, panel distance, ...) — persisted to
+  // localStorage. Indices into config.js's FONT_SCALE_STEPS/DISTANCE_STEPS.
+  settings: { fontStepIndex: 2, distanceStepIndex: 2 },
+
+  // Draft copy edited live while the settings panel is open; only copied
+  // into `settings` on Apply. Null whenever the panel is closed.
+  pendingSettings: null,
+  settingsOpen: false,
+  // Whether the video was mid-playback when settings was opened from the
+  // transport bar, so Close only resumes it if it was actually playing.
+  settingsWasPlaying: false,
+
+  // Small persistent "⚙" button shown beside the decision panel only,
+  // attached as a child of panelMesh so it inherits its soft-follow
+  // position for free.
+  gearMesh:    null,
+  gearCanvas:  null,
+  gearCtx:     null,
+  gearTex:     null,
+  gearHovered: false,
 };

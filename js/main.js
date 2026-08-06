@@ -15,6 +15,9 @@ import { loadScene } from './scene-loader.js';
 import { positionPanel, updatePanelOpacity } from './panel-mesh.js';
 import { drawTransportBar } from './draw-transport.js';
 import { updateVRHover } from './vr-controllers.js';
+import { loadSettings } from './settings-store.js';
+
+loadSettings(); // populate state.settings from localStorage before anything renders
 
 /* ─── Render loop ─────────────────────────────────────────────────────── */
 let lastTransportUpdate = 0;
@@ -35,7 +38,7 @@ renderer.setAnimationLoop((time) => {
   updatePanelOpacity();
 
   // Update transport bar every ~250 ms while playing
-  if (state.appState === State.PLAYING && time - lastTransportUpdate > 250) {
+if (state.appState === State.PLAYING && !state.settingsOpen && time - lastTransportUpdate > 250) {
     lastTransportUpdate = time;
     drawTransportBar(state.hoveredBtn);
   }

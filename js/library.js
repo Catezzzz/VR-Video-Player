@@ -5,7 +5,7 @@
 // no page navigation, so a live WebXR session is never touched.
 
 import { state, State } from './state.js';
-import { MANIFEST_URL, LIBRARY, LIBRARY_LAYOUT, FONT_HEAD, FONT_MONO, COLOURS, FONT_SIZES } from './config.js';
+import { MANIFEST_URL, LIBRARY, LIBRARY_LAYOUT, FONT_HEAD, FONT_MONO, COLOURS, getFontSizes } from './config.js';
 import { roundRect } from './utils.js';
 import { createPanel, positionPanel } from './panel-mesh.js';
 import { hideOverlay } from './overlay.js';
@@ -65,6 +65,7 @@ export function drawLibraryPanel(entries, hovered) {
   if (!ctx) return;
   const W = state.panelCanvas.width;
   const H = state.panelCanvas.height;
+  const FONT_SIZES = getFontSizes();
   ctx.clearRect(0, 0, W, H);
 
   // Background — same dark navy card treatment as the decision panel

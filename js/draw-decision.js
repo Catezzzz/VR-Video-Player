@@ -3,7 +3,7 @@
 // terminal "scenario complete" screen, and the Replay/Previous/Menu row.
 
 import { state } from './state.js';
-import { COLOURS, FONT_HEAD, FONT_MONO, FONT_SIZES, DECISION, DECISION_LAYOUT, MENU_URL } from './config.js';
+import { COLOURS, FONT_HEAD, FONT_MONO, getFontSizes, DECISION, DECISION_LAYOUT, MENU_URL } from './config.js';
 import { roundRect } from './utils.js';
 import { sphereMat } from './three-setup.js';
 
@@ -30,6 +30,7 @@ export function drawDecisionPanel(sceneData, hovered = null) {
   const ctx = state.panelCtx;
   const W   = state.panelCanvas.width;
   const H   = state.panelCanvas.height;
+  const FONT_SIZES = getFontSizes();
   ctx.clearRect(0, 0, W, H);
   sphereMat.color.setRGB(0.35, 0.35, 0.35); // dim background to about 35% brightness
 

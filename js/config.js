@@ -2,6 +2,8 @@
 // All tunable constants and URL params live here so behaviour/design tweaks
 // don't require hunting through logic files.
 
+import { state } from './state.js';
+
 export const VERSION = '0.10';
 export const SPHERE_RADIUS = 50;
 
@@ -120,6 +122,67 @@ export const LIBRARY_LAYOUT = {
   minCanvasH: 640,
   maxCanvasH: 1200,
 };
+
+// In-VR settings panel placement/sizing (same idea as TRANSPORT/DECISION).
+// It replaces whichever panel is currently showing rather than sitting
+// beside it, so it gets its own distance/height like DECISION does —
+// centered in front of the camera regardless of which panel it replaced.
+export const SETTINGS = {
+  distance: 5.5,
+  height:  -0.3,
+  worldW:   2.6,
+  canvasW:  820,
+};
+export const SETTINGS_LAYOUT = {
+  canvasH:        620,  // fixed — content is static (2 controls + action row), not choice-count dependent
+  pixelsPerMeter: 260,
+};
+
+// Small persistent "⚙" button shown beside the decision panel only —
+// this one stays a side-offset child of the decision panel, unaffected
+// by the settings panel's own placement above.
+export const GEAR_BUTTON = {
+  worldSize:  0.45,
+  canvasSize: 220,
+  gap:        0.25,
+};
+
+// Discrete font-size steps: 2 smaller, default in the middle, 2 bigger.
+export const FONT_SCALE_STEPS = [
+  { label: 'XS', scale: 0.8 },
+  { label: 'S',  scale: 0.9 },
+  { label: 'M',  scale: 1.0 },
+  { label: 'L',  scale: 1.1 },
+  { label: 'XL', scale: 1.2 },
+];
+
+// Discrete panel-distance steps (metres, added to each panel's base
+// `.distance`): a non-continuous slider with 11 fixed stops, default
+// (offset 0) exactly in the middle, left closer, right farther.
+export const DISTANCE_STEPS = Array.from({ length: 11 }, (_, i) => ({
+  offset: (i - 5) * 0.4, // index 5 (the middle of 0..10) => 0
+}));
+
+export const SETTINGS_DEFAULTS = { fontStepIndex: 2, distanceStepIndex: 5 };
+export const SETTINGS_STORAGE_KEY = 'vrplayer.settings.v1';
+
+/* Scaled copy of FONT_SIZES reflecting the user's committed font-size
+   setting. Callers do `const FONT_SIZES = getFontSizes();` at the top of
+   a draw function so every existing `FONT_SIZES.xxx` reference below it
+   keeps working unchanged. */
+export function getFontSizes() {
+  const step = FONT_SCALE_STEPS[state.settings.fontStepIndex] || FONT_SCALE_STEPS[2];
+  const scaled = {};
+  for (const key in FONT_SIZES) scaled[key] = FONT_SIZES[key] * step.scale;
+  return scaled;
+}
+
+/* Extra metres to add to a panel's base `.distance`, reflecting the user's
+   committed panel-distance setting. */
+export function getDistanceOffset() {
+  const step = DISTANCE_STEPS[state.settings.distanceStepIndex] || DISTANCE_STEPS[5];
+  return step.offset;
+}
 
 /* URL params */
 const params = new URLSearchParams(location.search);

@@ -3,13 +3,14 @@
 // (progress scrubber, play/pause, mute).
 
 import { state } from './state.js';
-import { COLOURS, FONT_MONO, FONT_SIZES, TRANSPORT } from './config.js';
+import { COLOURS, FONT_MONO, getFontSizes, TRANSPORT } from './config.js';
 import { roundRect, fmt } from './utils.js';
 import { video } from './three-setup.js';
 
 export function drawTransportBar(hovered = null) {
   if (!state.panelCtx) return;
   const ctx = state.panelCtx;
+  const FONT_SIZES = getFontSizes();
   const W   = TRANSPORT.canvasW;
   const H   = TRANSPORT.canvasH;
   const pX  = TRANSPORT.padX;
@@ -61,6 +62,7 @@ export function drawTransportBar(hovered = null) {
   const btns = [
     { id: 'playpause', label: video.paused ? '▶' : '⏸', x: pX },
     { id: 'mute',      label: state.isMuted ? '🔇' : '🔊', x: pX + 88 },
+    { id: 'settings',  label: '⚙',                        x: pX + 176 },
   ];
 
   btns.forEach(b => {

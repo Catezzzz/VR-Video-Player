@@ -11,15 +11,17 @@ import { MENU_URL } from './config.js';
 import { drawDecisionPanel, computeDecisionDims } from './draw-decision.js';
 import { drawTransportBar } from './draw-transport.js';
 import { createPanel, positionPanel } from './panel-mesh.js';
-import { loadScene } from './scene-loader.js';
+import { loadScene, transitionToPlaying, transitionToDecision } from './scene-loader.js';
 import { enterLibrary, drawLibraryPanel } from './library.js';
+import { drawGearButton, drawSettingsPanel } from './draw-settings.js';
+import { toggleSettings, handleGearClick, handleSettingsButtonClick, createGearButton } from './settings.js';
 
 export const raycaster = new THREE.Raycaster();
 const mouse2D = new THREE.Vector2();
 
-export function hitToButtonIndex(uv, buttonList) {
-  const cx = uv.x * state.panelCanvas.width;
-  const cy = (1 - uv.y) * state.panelCanvas.height;
+export function hitToButtonIndex(uv, buttonList, canvas = state.panelCanvas) {
+  const cx = uv.x * canvas.width;
+  const cy = (1 - uv.y) * canvas.height;
   for (let i = 0; i < buttonList.length; i++) {
     const b = buttonList[i];
     if (cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h) return i;
@@ -29,9 +31,58 @@ export function hitToButtonIndex(uv, buttonList) {
 
 export function getHitUV() {
   if (!state.panelMesh) return null;
-  const hits = raycaster.intersectObject(state.panelMesh);
+  const hits = raycaster.intersectObject(state.panelMesh, false);
   if (!hits.length) return null;
   return hits[0].uv;
+}
+
+/* Tests the gear button and main panel — in that priority order, though
+   in practice they never overlap in world space — using whatever ray is
+   currently set on `raycaster`. Each mesh is tested individually
+   (non-recursive) so the returned uv is always in that mesh's own local
+   canvas space, never mixed up with a sibling's. The settings panel has
+   no mesh of its own — it's drawn onto panelMesh's canvas like any other
+   panel content, so it's covered by the 'main' case below. */
+export function getActiveHit() {
+  if (state.gearMesh) {
+    const hits = raycaster.intersectObject(state.gearMesh, false);
+    if (hits.length) return { kind: 'gear', uv: hits[0].uv };
+  }
+  if (state.panelMesh) {
+    const hits = raycaster.intersectObject(state.panelMesh, false);
+    if (hits.length) return { kind: 'main', uv: hits[0].uv };
+  }
+  return null;
+}
+
+/* Shared hover dispatch — called after `raycaster` has been aimed, by
+   both the desktop mousemove listener and vr-controllers.js's per-frame
+   controller polling, so there's exactly one hover code path. */
+export function applyHoverHit(hit) {
+  const wasHovered = state.isPanelHovered;
+  state.isPanelHovered = !!hit;
+
+  const wasGearHover = state.gearHovered;
+  state.gearHovered = hit?.kind === 'gear';
+  if (wasGearHover !== state.gearHovered) drawGearButton(state.gearHovered);
+
+  if (hit?.kind !== 'main') {
+    state.hoveredBtn = null;
+    if (wasHovered !== state.isPanelHovered) redrawPanel();
+    return;
+  }
+
+  // Settings uses the same panelButtons hit list as the decision panel
+  // and library, since it's drawn onto the same shared canvas.
+  const usesPanelButtons = state.settingsOpen || state.appState === State.DECISION || state.appState === State.LIBRARY;
+  const activeButtons = usesPanelButtons ? state.panelButtons : state.transportButtons;
+  const idx = hitToButtonIndex(hit.uv, activeButtons);
+  const id  = idx >= 0 ? (usesPanelButtons ? idx : activeButtons[idx].id) : null;
+
+  if (id !== state.hoveredBtn || wasHovered !== state.isPanelHovered) {
+    state.hoveredBtn = id;
+    redrawPanel();
+  }
 }
 
 // Desktop mouse interaction
@@ -39,26 +90,7 @@ renderer.domElement.addEventListener('mousemove', e => {
   mouse2D.x =  (e.clientX / innerWidth)  * 2 - 1;
   mouse2D.y = -(e.clientY / innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse2D, camera);
-
-  const uv = getHitUV();
-  const wasHovered = state.isPanelHovered;
-  state.isPanelHovered = !!uv;
-
-  if (!uv) {
-    state.hoveredBtn = null;
-    if (wasHovered !== state.isPanelHovered) redrawPanel();
-    return;
-  }
-
-  const usesPanelButtons = state.appState === State.DECISION || state.appState === State.LIBRARY;
-  const activeButtons = usesPanelButtons ? state.panelButtons : state.transportButtons;
-  const idx = hitToButtonIndex(uv, activeButtons);
-  const id  = idx >= 0 ? (usesPanelButtons ? idx : activeButtons[idx].id) : null;
-
-  if (id !== state.hoveredBtn || wasHovered !== state.isPanelHovered) {
-    state.hoveredBtn = id;
-    redrawPanel();
-  }
+  applyHoverHit(getActiveHit());
 });
 
 renderer.domElement.addEventListener('click', e => {
@@ -69,21 +101,49 @@ renderer.domElement.addEventListener('click', e => {
 });
 
 export function handlePanelClick() {
-  const uv = getHitUV();
-  if (!uv) return;
+  const hit = getActiveHit();
+  if (!hit) return;
+
+  if (hit.kind === 'gear') { handleGearClick(resumeCurrentPanel); return; }
+  if (hit.kind !== 'main') return;
+
+  if (state.settingsOpen) {
+    const idx = hitToButtonIndex(hit.uv, state.panelButtons);
+    if (idx < 0) return;
+    handleSettingsButtonClick(idx, hit.uv, resumeCurrentPanel);
+    return;
+  }
+
   if (state.appState === State.DECISION) {
-    const idx = hitToButtonIndex(uv, state.panelButtons);
+    const idx = hitToButtonIndex(hit.uv, state.panelButtons);
     if (idx < 0) return;
     onChoiceSelected(state.panelButtons[idx]);
   } else if (state.appState === State.PLAYING) {
-    const idx = hitToButtonIndex(uv, state.transportButtons);
+    const idx = hitToButtonIndex(hit.uv, state.transportButtons);
     if (idx < 0) return;
-    onTransportAction(state.transportButtons[idx], uv);
+    onTransportAction(state.transportButtons[idx], hit.uv);
   } else if (state.appState === State.LIBRARY) {
-    const idx = hitToButtonIndex(uv, state.panelButtons);
+    const idx = hitToButtonIndex(hit.uv, state.panelButtons);
     if (idx < 0) return;
     state.decisionHistory = []; // fresh run starting from the library
     loadScene(state.panelButtons[idx].next);
+  }
+}
+
+/* Rebuilds whichever panel (transport bar / decision panel / library) was
+   showing before settings replaced it — passed into settings.js's
+   closeSettings()/toggleSettings() as the `resume` callback, since
+   settings.js can't import transitionToPlaying/transitionToDecision/
+   enterLibrary directly without creating a circular import. Safe to call
+   even outside a settings-close flow, since each of these just rebuilds
+   the panel from state already in memory (no re-fetching). */
+export function resumeCurrentPanel() {
+  if (state.appState === State.PLAYING) {
+    transitionToPlaying();
+  } else if (state.appState === State.DECISION) {
+    transitionToDecision(); // also recreates the gear button
+  } else if (state.appState === State.LIBRARY) {
+    enterLibrary();
   }
 }
 
@@ -138,6 +198,7 @@ async function goToPreviousOptions() {
     if (state.panelMesh) state.panelMesh.material.opacity = 1.0;
     positionPanel();
     drawDecisionPanel(state.currentJSON, null);
+    createGearButton();
   } catch (e) {
     console.error('[VRPlayer] Failed to go back to previous options:', e);
     // Put the path back on the stack since we failed to navigate to it.
@@ -150,6 +211,9 @@ function onTransportAction(btn, uv) {
     video.paused ? video.play() : video.pause();
   } else if (btn.id === 'mute') {
     state.isMuted = !state.isMuted; video.muted = state.isMuted;
+  } else if (btn.id === 'settings') {
+    toggleSettings(resumeCurrentPanel);
+    return; // openSettings()/closeSettings() already redrew the panel
   } else if (btn.id === 'seek') {
     const cx = uv.x * state.panelCanvas.width;
     const pX = 60, pW = state.panelCanvas.width - 120;
@@ -161,7 +225,9 @@ function onTransportAction(btn, uv) {
 
 export function redrawPanel() {
   if (!state.panelCtx) return;
-  if (state.appState === State.DECISION || state.appState === State.ENDED) {
+  if (state.settingsOpen) {
+    drawSettingsPanel(state.pendingSettings, state.hoveredBtn);
+  } else if (state.appState === State.DECISION || state.appState === State.ENDED) {
     drawDecisionPanel(state.currentJSON, state.hoveredBtn);
   } else if (state.appState === State.PLAYING) {
     drawTransportBar(state.hoveredBtn);
