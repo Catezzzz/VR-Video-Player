@@ -135,7 +135,7 @@ export const SETTINGS = {
 };
 export const SETTINGS_LAYOUT = {
   canvasH:        620,  // fixed — content is static (2 controls + action row), not choice-count dependent
-  pixelsPerMeter: 260,
+  pixelsPerMeter: 300,
 };
 
 // Small persistent "⚙" button shown beside the decision panel only —

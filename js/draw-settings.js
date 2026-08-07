@@ -141,10 +141,10 @@ export function drawSettingsPanel(pending, hoveredId = null) {
   ctx.stroke();
 
   ctx.fillStyle     = COLOURS.accentSoft;
-  ctx.font          = `500 ${FONT_SIZES.kicker}px ${FONT_MONO}`;
+  ctx.font          = `500 ${FONT_SIZES.prompt}px ${FONT_MONO}`;
   ctx.textAlign     = 'left';
   ctx.letterSpacing = '3px';
-  ctx.fillText('SETTINGS', 40, 52);
+  ctx.fillText('SETTINGS', 40, 60);
   ctx.letterSpacing = '0px';
 
   ctx.strokeStyle = COLOURS.border;
@@ -158,8 +158,8 @@ export function drawSettingsPanel(pending, hoveredId = null) {
   let y = 116;
 
   // Font size row
-  ctx.fillStyle = COLOURS.subtext;
-  ctx.font      = `500 ${FONT_SIZES.utilButton - 4}px ${FONT_HEAD}`;
+  ctx.fillStyle = COLOURS.text;
+  ctx.font      = `500 ${FONT_SIZES.utilButton}px ${FONT_HEAD}`;
   ctx.textAlign = 'left';
   ctx.fillText('Font Size', marginX, y);
   y += 30;
@@ -167,8 +167,8 @@ export function drawSettingsPanel(pending, hoveredId = null) {
   y += 72 + 52;
 
   // Panel distance row
-  ctx.fillStyle = COLOURS.subtext;
-  ctx.font      = `500 ${FONT_SIZES.utilButton - 4}px ${FONT_HEAD}`;
+  ctx.fillStyle = COLOURS.text;
+  ctx.font      = `500 ${FONT_SIZES.utilButton}px ${FONT_HEAD}`;
   ctx.textAlign = 'left';
   ctx.fillText('Panel Distance', marginX, y);
   y += 30;
