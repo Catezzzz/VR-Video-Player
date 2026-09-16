@@ -1,0 +1,14 @@
+{
+  "title": "Leave and document the refusal",
+  "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/refusing-medication/Option%20C_Leave%20and%20document%20the%20refusal_Stereo.mp4",
+  "subtitles": "optionC.srt",
+  "decision": {
+    "prompt": "View patient's perspective?",
+    "choices": [
+      {
+        "label": "Yes",
+        "next": "scenarios/refusing-medication/OptionC2.json"
+      }
+    ]
+  }
+}

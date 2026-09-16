@@ -1,0 +1,22 @@
+{
+  "title": "Refusing Medication: Intro",
+  "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/refusing-medication/Refusing%20medication_Baseline%20scenario%20before%20options_Stereo.mp4",
+  "subtitles": "intro.srt",
+  "decision": {
+    "prompt": "What will you do?",
+    "choices": [
+      {
+        "label": "Prioritize comfort and build rapport",
+        "next": "scenarios/refusing-medication/OptionA.json"
+      },
+      {
+        "label": "Offering medication with apple sauce",
+        "next": "scenarios/refusing-medication/OptionB.json"
+      },
+      {
+        "label": "Leave and document the refusal",
+        "next": "scenarios/refusing-medication/OptionC.json"
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "title": "Yelling Patient: Intro",
+  "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/yelling-patient/Yelling%20patient_Baseline%20scenario%20stereo.mp4",
+  "subtitles": "intro.srt",
+  "decision": {
+    "prompt": "What will you do?",
+    "choices": [
+      {
+        "label": "Put down the water and leave the room",
+        "next": "scenarios/yelling-patient/OptionA.json"
+      },
+      {
+        "label": "Review patient's information before reapproaching",
+        "next": "scenarios/yelling-patient/OptionB.json"
+      },
+      {
+        "label": "Ask for help",
+        "next": "scenarios/yelling-patient/OptionC.json"
+      }
+    ]
+  }
+}

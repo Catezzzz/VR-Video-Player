@@ -1,0 +1,22 @@
+{
+  "title": "Completing Vitals: Intro",
+  "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/completing-vitals/Vital%20sign%20complete_Baseline%20scenario_Stereo.mp4",
+  "subtitles": "intro.srt",
+  "decision": {
+    "prompt": "What will you do?",
+    "choices": [
+      {
+        "label": "Share the vital sign results",
+        "next": "scenarios/completing-vitals/OptionA.json"
+      },
+      {
+        "label": "Tell him, \"I will return soon.\"",
+        "next": "scenarios/completing-vitals/OptionB.json"
+      },
+      {
+        "label": "Leave with direct messages and instructions",
+        "next": "scenarios/completing-vitals/OptionC.json"
+      }
+    ]
+  }
+}

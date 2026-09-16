@@ -1,0 +1,35 @@
+1
+00:00:00,000 --> 00:00:01,000
+Good morning, Jose.
+
+2
+00:00:01,000 --> 00:00:05,000
+I have your medication for you.
+
+3
+00:00:05,000 --> 00:00:08,000
+No, no pills!
+
+4
+00:00:08,000 --> 00:00:10,000
+You're trying to poison me!
+
+5
+00:00:10,000 --> 00:00:12,000
+Go away!
+
+6
+00:00:12,000 --> 00:00:15,000
+Oh no, he's terrified.
+
+7
+00:00:15,000 --> 00:00:17,000
+He thinks I'm dangerous.
+
+8
+00:00:17,000 --> 00:00:20,000
+If I keep pushing, this will only get worse.
+
+9
+00:00:20,000 --> 00:00:23,000
+What should I do now?

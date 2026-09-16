@@ -1,0 +1,35 @@
+1
+00:00:14,000 --> 00:00:15,000
+Hello, Lolo Pedro.
+
+2
+00:00:15,000 --> 00:00:17,000
+My name is Alex.
+
+3
+00:00:17,000 --> 00:00:19,000
+I am a student nurse helping today.
+
+4
+00:00:19,000 --> 00:00:24,000
+Is it alright for me to check your blood pressure?
+
+5
+00:00:24,000 --> 00:00:36,000
+Okay.
+
+6
+00:00:36,000 --> 00:00:43,000
+So this cuff will go around your arm and then it will squeeze like having a gentle hug.
+
+7
+00:00:43,000 --> 00:00:46,000
+So we will start now, okay?
+
+8
+00:00:46,000 --> 00:01:03,000
+Okay.
+
+9
+00:01:03,000 --> 00:01:06,000
+I do not want that!

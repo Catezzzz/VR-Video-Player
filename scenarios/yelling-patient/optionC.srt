@@ -1,0 +1,55 @@
+1
+00:00:00,000 --> 00:00:02,000
+Maybe I should get some help instead of just leaving.
+
+2
+00:00:02,000 --> 00:00:03,000
+Carol!
+
+3
+00:00:03,000 --> 00:00:05,000
+Francisco is upset.
+
+4
+00:00:05,000 --> 00:00:08,000
+I tried to give him his meds, but he yelled at me and I'm stuck.
+
+5
+00:00:08,000 --> 00:00:09,000
+I think I need some help.
+
+6
+00:00:09,000 --> 00:00:19,000
+Oh... Okay! Let me go grab the warm water and then I will come for you.
+
+7
+00:00:19,000 --> 00:00:21,000
+Okay, let's go in together.
+
+8
+00:00:21,000 --> 00:00:23,000
+I have the warm water.
+
+9
+00:00:23,000 --> 00:00:25,000
+Okay, let me go in first.
+
+10
+00:00:25,000 --> 00:00:28,000
+Hi, Lolo Isko.
+
+11
+00:00:28,000 --> 00:00:30,000
+Hi, Lolo Isko.
+
+12
+00:00:30,000 --> 00:00:37,000
+There's our student nurse and she is coming for giving you some warm water.
+
+13
+00:00:37,000 --> 00:00:39,000
+Okay, it's fine.
+
+14
+00:00:39,000 --> 00:00:41,000
+Okay.

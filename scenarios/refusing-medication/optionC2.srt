@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:05,000
+Doctor... orders... take this pill now!
+
+2
+00:00:05,000 --> 00:00:09,000
+Who's this huge person?
+
+3
+00:00:09,000 --> 00:00:12,000
+Why are they screaming?
+
+4
+00:00:12,000 --> 00:00:14,000
+What is in his hands?
+
+5
+00:00:14,000 --> 00:00:16,000
+They're trying to poison me.
+
+6
+00:00:16,000 --> 00:00:18,000
+Go away!

@@ -1,0 +1,23 @@
+1
+00:00:00,000 --> 00:00:12,000
+So your blood pressure is 134 over 82 and then your heart rate is 87, your SpO2 is 97% and your temperature is 36.
+
+2
+00:00:12,000 --> 00:00:14,000
+So all good.
+
+3
+00:00:14,000 --> 00:00:15,000
+Your vital signs look good to me.
+
+4
+00:00:15,000 --> 00:00:19,000
+And the doctor will come to you before noon.
+
+5
+00:00:19,000 --> 00:00:21,000
+What's that SPH?
+
+6
+00:00:21,000 --> 00:00:23,000
+Is that my sunscreen number?

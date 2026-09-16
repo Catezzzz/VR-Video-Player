@@ -1,0 +1,15 @@
+1
+00:00:00,000 --> 00:00:03,000
+We are all finished with your vital signs, lolo.
+
+2
+00:00:03,000 --> 00:00:05,000
+This is your call bell.
+
+3
+00:00:05,000 --> 00:00:08,000
+If you need anything, press the red button.
+
+4
+00:00:08,000 --> 00:00:11,000
+I'm going to help other patients now.

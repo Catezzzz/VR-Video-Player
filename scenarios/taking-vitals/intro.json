@@ -1,0 +1,18 @@
+{
+  "title": "Taking Vitals: Intro",
+  "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/taking-vitals/Vital%20sign%20baseline%20scenario_Stereo.mp4",
+  "subtitles": "intro.srt",
+  "decision": {
+    "prompt": "What will you do?",
+    "choices": [
+      {
+        "label": "Enter and begin the task immediately",
+        "next": "scenarios/taking-vitals/OptionA.json"
+      },
+      {
+        "label": "Knock, peek, and greet",
+        "next": "scenarios/taking-vitals/OptionB.json"
+      }
+    ]
+  }
+}
