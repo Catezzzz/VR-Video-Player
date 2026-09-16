@@ -50,4 +50,15 @@ export const state = {
   gearCtx:     null,
   gearTex:     null,
   gearHovered: false,
+
+
+    // Subtitles — own mesh, independent of panelMesh's create/dispose cycle
+    subtitlesOn:     true,
+    subtitleCues:    [],   // [{ start, end, text }] for the active scene
+    subtitleCursor:  0,    // index hint for the active-cue scan
+    subtitleShown:   -1,   // cue index currently drawn (-1 = none); guards redraws
+    subtitleMesh:    null,
+    subtitleCanvas:  null,
+    subtitleCtx:     null,
+    subtitleTex:     null,
 };

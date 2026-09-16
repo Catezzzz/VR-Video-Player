@@ -52,6 +52,28 @@ export const PANEL_FOLLOW = {
   deadzoneDeg: 3.5,    // panel stays put until you look away more than this; 0 disables
 };
 
+// Subtitle strip. Placed by ANGLE below the view direction rather than a
+// fixed world height, so it holds position across distance settings.
+export const SUBTITLES = {
+  distance:  3.0,
+  pitchDeg: -18,     // degrees below the horizon; negative = below
+  worldW:    3.4,
+  canvasW:   1024,
+  canvasH:   256,
+  padX:      36,
+  padY:      22,
+  lineGap:   10,
+  maxLines:  3,
+  bgColour:  'rgba(10,14,28,0.62)',
+};
+
+// Three follow behaviours to try on device. Switch with ?subfollow=…
+export const SUBTITLE_FOLLOW_MODES = {
+  stationary: { posLambda: 0,  rotLambda: 0,  deadzoneDeg: 0,  followPitch: false },
+  lazy:       { posLambda: 8,  rotLambda: 8,  deadzoneDeg: 10, followPitch: false },
+  locked:     { posLambda: 40, rotLambda: 40, deadzoneDeg: 0,  followPitch: true  },
+};
+
 // Guided Coach design tokens (indigo accent, dark navy panels, Space Grotesk
 // for headings/labels, IBM Plex Mono for kickers & timestamps).
 export const COLOURS = {
@@ -98,6 +120,7 @@ export const FONT_SIZES = {
   choiceArrow:     24,
   emptyState:      26,
   utilButton:      28,
+  subtitle:        34,
 
   // Transport bar
   transportTime:   19,
@@ -190,5 +213,6 @@ const params = new URLSearchParams(location.search);
 // from "no scenario given, show the library" instead of always falling
 // back to a default scenario.
 export const SCENARIO_PARAM = params.get('scenario');
+export const SUBTITLE_FOLLOW_MODE = params.get('subfollow') || 'lazy';
 export const ROOT_JSON = SCENARIO_PARAM || 'scenarios/catching-the-bus/intro.json';
 export const MENU_URL  = params.get('menu') || 'Menu.html';

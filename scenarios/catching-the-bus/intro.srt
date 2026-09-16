@@ -1,0 +1,39 @@
+1
+00:00:25,000 --> 00:00:27,000
+Excuse me.
+
+2
+00:00:27,000 --> 00:00:28,000
+Can you help me?
+
+3
+00:00:28,000 --> 00:00:30,000
+I think I need some help.
+
+4
+00:00:30,000 --> 00:00:34,000
+I'm missing my bus.
+
+5
+00:00:34,000 --> 00:00:38,000
+My grandson is going to wait for me.
+
+6
+00:00:38,000 --> 00:00:41,000
+I know she has tried to leave before.
+
+7
+00:00:41,000 --> 00:00:44,000
+I'm already running behind.
+
+8
+00:00:44,000 --> 00:00:46,000
+Mr. Smith needs his dressing changed.
+
+9
+00:00:46,000 --> 00:00:49,000
+I don't know if I have time for this.
+
+10
+00:00:49,000 --> 00:00:52,000
+What should I do?

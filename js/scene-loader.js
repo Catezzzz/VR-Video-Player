@@ -16,12 +16,14 @@ import {
 } from './overlay.js';
 import { enterLibrary } from './library.js';
 import { createGearButton } from './settings.js';
+import { loadSubtitles, resetSubtitles } from './subtitles.js';
 
 export async function loadScene(jsonPath) {
   state.appState = State.LOADING;
   state.hoveredBtn = null;
   state.isPanelHovered = false;
   disposePanelMesh();
+  resetSubtitles();
   setLoadProgress(0.1);
 
   // Stop old video
@@ -62,6 +64,10 @@ export async function loadScene(jsonPath) {
   const base     = jsonPath.substring(0, jsonPath.lastIndexOf('/') + 1);
   const videoSrc = sceneData.video.startsWith('http') ? sceneData.video : base + sceneData.video;
 
+  // Kick off the subtitle fetch now; awaited after the video resolves so
+  // cues are ready before the first frame plays, with no added wait.
+  const subsPromise = loadSubtitles(sceneData, base);
+
   // 3. Load video
   await new Promise((resolve, reject) => {
     video.src = videoSrc;
@@ -71,6 +77,7 @@ export async function loadScene(jsonPath) {
     setTimeout(() => reject(new Error('Video load timeout')), 30000);
   }).catch(e => { showError(e.message); throw e; });
 
+  await subsPromise;
   setLoadProgress(0.9);
 
   // Apply video texture to sphere

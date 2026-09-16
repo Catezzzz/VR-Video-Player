@@ -1,0 +1,39 @@
+1
+00:00:00,000 --> 00:00:02,000
+I need to catch the number seven bus.
+
+2
+00:00:02,000 --> 00:00:06,000
+My grandson is waiting for me.
+
+3
+00:00:06,000 --> 00:00:08,000
+Oh, is that your grandson?
+
+4
+00:00:08,000 --> 00:00:10,000
+Can you tell me about him?
+
+5
+00:00:10,000 --> 00:00:13,000
+This is my grandson.
+
+6
+00:00:13,000 --> 00:00:15,000
+He's at the university.
+
+7
+00:00:15,000 --> 00:00:17,000
+He's doing his master’s degree.
+
+8
+00:00:17,000 --> 00:00:21,000
+I remember seeing some pictures inside your room.
+
+9
+00:00:21,000 --> 00:00:23,000
+Would you show them to me?
+
+10
+00:00:23,000 --> 00:00:25,000
+Okay.

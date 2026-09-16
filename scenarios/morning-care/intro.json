@@ -1,6 +1,7 @@
 {
   "title": "Morning Care: Intro",
   "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/morning-care-edited/before%20options.mp4",
+  "subtitles": "intro.srt",
   "decision": {
     "prompt": "What will you do?",
     "choices": [

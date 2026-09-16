@@ -1,0 +1,15 @@
+1
+00:00:00,000 --> 00:00:03,000
+Excuse me, can anyone help me?
+
+2
+00:00:03,000 --> 00:00:08,000
+Is anyone listening to me?
+
+3
+00:00:08,000 --> 00:00:11,000
+No one ever talked to me...
+
+4
+00:00:11,000 --> 00:00:14,000
+No one is paying attention to me...

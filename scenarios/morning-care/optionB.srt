@@ -1,0 +1,15 @@
+1
+00:00:03,000 --> 00:00:07,000
+Wong popo, I noticed you're holding the blanket very tightly.
+
+2
+00:00:07,000 --> 00:00:08,000
+You look worried.
+
+3
+00:00:08,000 --> 00:00:17,000
+Would you like me help wash you or would you rather wash yourself?
+
+4
+00:00:17,000 --> 00:00:20,000
+I do.

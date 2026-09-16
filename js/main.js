@@ -16,6 +16,7 @@ import { positionPanel, updatePanelOpacity } from './panel-mesh.js';
 import { drawTransportBar } from './draw-transport.js';
 import { updateVRHover } from './vr-controllers.js';
 import { loadSettings } from './settings-store.js';
+import { updateSubtitles } from './subtitles.js';
 
 loadSettings(); // populate state.settings from localStorage before anything renders
 
@@ -36,6 +37,7 @@ renderer.setAnimationLoop((time) => {
 
   // Smoothly animate transport bar opacity every frame
   updatePanelOpacity();
+  updateSubtitles(dt);
 
   // Update transport bar every ~250 ms while playing
 if (state.appState === State.PLAYING && !state.settingsOpen && time - lastTransportUpdate > 250) {

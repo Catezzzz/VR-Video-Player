@@ -1,0 +1,63 @@
+1
+00:00:00,000 --> 00:00:02,000
+What do you want for breakfast?
+
+2
+00:00:02,000 --> 00:00:05,000
+We had porridge.
+
+3
+00:00:05,000 --> 00:00:06,000
+Yeah.
+
+4
+00:00:06,000 --> 00:00:07,000
+Hello, my name is Hannah.
+
+5
+00:00:07,000 --> 00:00:09,000
+I'm the nurse.
+
+6
+00:00:09,000 --> 00:00:10,000
+Hi, good morning.
+
+7
+00:00:10,000 --> 00:00:11,000
+I am Cherry.
+
+8
+00:00:11,000 --> 00:00:13,000
+I am Wong Popo's granddaughter.
+
+9
+00:00:13,000 --> 00:00:14,000
+Nice to meet you, Cherry.
+
+10
+00:00:14,000 --> 00:00:15,000
+Nice to meet you.
+
+11
+00:00:15,000 --> 00:00:17,000
+Good morning, Wong Popo.
+
+12
+00:00:17,000 --> 00:00:19,000
+I'm here to help you with your morning wash.
+
+13
+00:00:19,000 --> 00:00:22,000
+We'll just wash your face and arms, all right?
+
+14
+00:00:22,000 --> 00:00:25,000
+Yes, okay.
+
+15
+00:00:25,000 --> 00:00:27,000
+She said yes.
+
+16
+00:00:27,000 --> 00:00:31,000
+I've got several residents to care for this morning I should just keep moving.
