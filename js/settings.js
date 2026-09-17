@@ -118,6 +118,7 @@ export function applySettings() {
   state.settings = { ...state.pendingSettings };
   saveSettings();
   if (state.panelMesh) state.panelMesh.userData.followInit = false; // Panel stops following for a bit to allow changes to be made
+  if (state.subtitleMesh) state.subtitleMesh.userData.followInit = false; //Same as above but for subtitle
   // Nothing else is visible while settings is open, so there's no other
   // panel to redraw here — the new font/distance values take effect the
   // moment Close rebuilds whatever panel comes back.

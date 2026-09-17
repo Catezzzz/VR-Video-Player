@@ -70,7 +70,7 @@ export const SUBTITLES = {
 // Three follow behaviours to try on device. Switch with ?subfollow=…
 export const SUBTITLE_FOLLOW_MODES = {
   stationary: { posLambda: 0,  rotLambda: 0,  deadzoneDeg: 0,  followPitch: false },
-  lazy:       { posLambda: 8,  rotLambda: 8,  deadzoneDeg: 10, followPitch: false },
+  lazy:       { posLambda: 1,  rotLambda: 1,  deadzoneDeg: 3.5, followPitch: false },
   locked:     { posLambda: 40, rotLambda: 40, deadzoneDeg: 0,  followPitch: true  },
 };
 
