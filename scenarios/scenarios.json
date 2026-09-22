@@ -34,11 +34,5 @@
     "title": "Taking Vitals",
     "thumbnail": "scenarios/taking-vitals/vital signs.png",
     "intro": "scenarios/taking-vitals/intro.json"
-  },
-  {
-    "id": "completing-vitals",
-    "title": "Completing Vitals",
-    "thumbnail": "scenarios/test-scenario/thumbnail.png",
-    "intro": "scenarios/completing-vitals/intro.json"
   }
 ]
