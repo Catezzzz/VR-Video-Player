@@ -1,44 +1,44 @@
 [
   {
-    "id": "test-scenario",
-    "title": "Test Scenario",
-    "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
-    "intro": "scenarios/test-scenario/intro.json"
+    "id": "orientation-video",
+    "title": "Orientation Video",
+    "thumbnail": "scenarios/orientation-video/orientation video.png",
+    "intro": "scenarios/orientation-video/intro.json"
   },
   {
     "id": "morning-care",
     "title": "Morning Care",
-    "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
+    "thumbnail": "scenarios/morning-care/morning care.png",
     "intro": "scenarios/morning-care/intro.json"
   },
   {
     "id": "catching-the-bus",
     "title": "Catching the Bus",
-    "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
+    "thumbnail": "scenarios/catching-the-bus/catching the bus.png",
     "intro": "scenarios/catching-the-bus/intro.json"
   },
   {
     "id": "refusing-medication",
     "title": "Refusing Medication",
-    "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
+    "thumbnail": "scenarios/refusing-medication/refusing medication.png",
     "intro": "scenarios/refusing-medication/intro.json"
   },
   {
     "id": "yelling-patient",
     "title": "Yelling Patient",
-    "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
+    "thumbnail": "scenarios/yelling-patient/yelling patient.png",
     "intro": "scenarios/yelling-patient/intro.json"
   },
   {
     "id": "taking-vitals",
     "title": "Taking Vitals",
-    "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
+    "thumbnail": "scenarios/taking-vitals/vital signs.png",
     "intro": "scenarios/taking-vitals/intro.json"
   },
   {
     "id": "completing-vitals",
     "title": "Completing Vitals",
-    "thumbnail": "scenarios/test-scenario/thumbnail.jpg",
+    "thumbnail": "scenarios/test-scenario/thumbnail.png",
     "intro": "scenarios/completing-vitals/intro.json"
   }
 ]
