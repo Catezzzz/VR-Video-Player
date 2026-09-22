@@ -12,6 +12,8 @@ export const state = {
 
   // Cached scenarios.json manifest, once fetched by the in-VR library panel.
   libraryEntries: null,
+  // Current page (0-based) of the in-VR library's fixed 2x3 grid.
+  libraryPage: 0,
 
   // Stack of decision-node paths the user has passed through, used by the
   // "Previous Options" button. Pushed on a story choice, popped on back-nav.

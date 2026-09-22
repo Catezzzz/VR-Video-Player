@@ -19,6 +19,28 @@ export function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
+// Draws `img` into the x/y/w/h box the same way CSS `object-fit: cover`
+// would — filling the box completely and cropping whichever axis overflows,
+// instead of squashing the image or leaving letterbox bars. Used for the
+// scenario thumbnails in the in-VR library grid.
+export function drawImageCover(ctx, img, x, y, w, h) {
+  const boxRatio = w / h;
+  const imgRatio = img.width / img.height;
+  let sx, sy, sw, sh;
+  if (imgRatio > boxRatio) {
+    sh = img.height;
+    sw = sh * boxRatio;
+    sx = (img.width - sw) / 2;
+    sy = 0;
+  } else {
+    sw = img.width;
+    sh = sw / boxRatio;
+    sx = 0;
+    sy = (img.height - sh) / 2;
+  }
+  ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+}
+
 export function fmt(s) {
   return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 }

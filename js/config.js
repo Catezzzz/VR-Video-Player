@@ -138,12 +138,24 @@ export const LIBRARY = {
   worldW:   4.2,
   canvasW:  1200,
 };
+// Fixed-page grid: cols x rows scenarios per page, with a thumbnail +
+// title on each card and prev/next paging instead of scroll (raycasted
+// panels have no wheel/scrollbar input, so paging is the simpler fit).
 export const LIBRARY_LAYOUT = {
-  headerH:    160,   // kicker + title + top divider
-  cardH:      130,   // per-scenario card height
-  cardGap:    18,
-  minCanvasH: 640,
-  maxCanvasH: 1200,
+  headerH:    140,   // kicker + title + top divider
+  gridTopGap: 20,    // gap between header divider and first row of cards
+  cols:       2,
+  rows:       3,
+  marginX:    48,    // left/right margin for the grid
+  colGap:     24,
+  rowGap:     24,
+  cardThumbH: 176,   // thumbnail box height inside each card
+  cardTitleH: 60,    // title-bar height under the thumbnail
+  navGapTop:  20,    // gap between grid and the prev/next row
+  navH:       90,    // height reserved for the prev/next row
+  navBtnW:    150,
+  navBtnH:    60,
+  navBtnGap:  70,    // gap from panel center to each button's inner edge
 };
 
 // In-VR settings panel placement/sizing (same idea as TRANSPORT/DECISION).

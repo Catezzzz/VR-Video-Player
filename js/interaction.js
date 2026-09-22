@@ -125,8 +125,7 @@ export function handlePanelClick() {
   } else if (state.appState === State.LIBRARY) {
     const idx = hitToButtonIndex(hit.uv, state.panelButtons);
     if (idx < 0) return;
-    state.decisionHistory = []; // fresh run starting from the library
-    loadScene(state.panelButtons[idx].next);
+    onLibraryButtonSelected(state.panelButtons[idx]);
   }
 }
 
@@ -204,6 +203,19 @@ async function goToPreviousOptions() {
     // Put the path back on the stack since we failed to navigate to it.
     state.decisionHistory.push(prevPath);
   }
+}
+
+/* Library panel button dispatch — paging just steps state.libraryPage and
+   redraws in place; anything else is a scenario card, same as before. */
+function onLibraryButtonSelected(btn) {
+  if (btn.action === 'page-prev' || btn.action === 'page-next') {
+    state.libraryPage += btn.action === 'page-prev' ? -1 : 1;
+    state.hoveredBtn = null;
+    drawLibraryPanel(state.libraryEntries, null);
+    return;
+  }
+  state.decisionHistory = []; // fresh run starting from the library
+  loadScene(btn.next);
 }
 
 function onTransportAction(btn, uv) {
