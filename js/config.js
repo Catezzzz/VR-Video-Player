@@ -4,7 +4,7 @@
 
 import { state } from './state.js';
 
-export const VERSION = '0.10';
+export const VERSION = '0.11';
 export const SPHERE_RADIUS = 50;
 
 // Transport bar config

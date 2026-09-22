@@ -68,6 +68,28 @@ function drawFallbackThumb(ctx, x, y, w, h) {
   ctx.restore();
 }
 
+function drawCloseButton(ctx, x, y, size, isHover) {
+  roundRect(ctx, x, y, size, size, 12);
+  ctx.fillStyle = isHover ? COLOURS.utilHover : COLOURS.ghostBg;
+  ctx.fill();
+  ctx.strokeStyle = isHover ? COLOURS.accent : COLOURS.ghostBorder;
+  ctx.lineWidth = isHover ? 1.5 : 1;
+  roundRect(ctx, x, y, size, size, 12);
+  ctx.stroke();
+
+  ctx.strokeStyle = isHover ? '#ffffff' : COLOURS.badgeText;
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  const pad = size * 0.32;
+  ctx.beginPath();
+  ctx.moveTo(x + pad, y + pad);
+  ctx.lineTo(x + size - pad, y + size - pad);
+  ctx.moveTo(x + size - pad, y + pad);
+  ctx.lineTo(x + pad, y + size - pad);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
 function drawNavButton(ctx, x, y, w, h, label, enabled, isHover, FONT_SIZES) {
   roundRect(ctx, x, y, w, h, 999);
   ctx.fillStyle = !enabled ? 'rgba(22,28,52,0.4)' : (isHover ? COLOURS.utilHover : COLOURS.ghostBg);
@@ -97,6 +119,12 @@ function computeLibraryDims() {
    "≡ Menu" button while already in VR — same document, same session. */
 export async function enterLibrary() {
   hideOverlay();
+  // Remember what the library is covering up (only meaningful the first
+  // time in — if it's already LIBRARY, e.g. paging/redraw, leave it alone).
+  if (state.appState !== State.LIBRARY) {
+    state.libraryReturnState =
+      (state.appState === State.PLAYING || state.appState === State.DECISION) ? state.appState : null;
+  }
   state.appState = State.LIBRARY;
   state.hoveredBtn = null;
   state.isPanelHovered = false;
@@ -165,6 +193,15 @@ export function drawLibraryPanel(entries, hovered) {
   ctx.beginPath(); ctx.moveTo(48, L.headerH); ctx.lineTo(W - 48, L.headerH); ctx.stroke();
 
   state.panelButtons = [];
+
+  // Close ("✕"), top-right of the header — always present, even on an
+  // empty library, so there's always a way out.
+  const closeSize = 48;
+  const closeX = W - 48 - closeSize;
+  const closeY = 44;
+  const closeIdx = state.panelButtons.length;
+  drawCloseButton(ctx, closeX, closeY, closeSize, hovered === closeIdx);
+  state.panelButtons.push({ x: closeX, y: closeY, w: closeSize, h: closeSize, id: closeIdx, action: 'close' });
 
   const all = entries || [];
   const perPage = L.cols * L.rows;

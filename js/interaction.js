@@ -206,7 +206,9 @@ async function goToPreviousOptions() {
 }
 
 /* Library panel button dispatch — paging just steps state.libraryPage and
-   redraws in place; anything else is a scenario card, same as before. */
+   redraws in place; Close resumes whatever the library was covering, or
+   ends the VR session if it was opened fresh; anything else is a
+   scenario card, same as before. */
 function onLibraryButtonSelected(btn) {
   if (btn.action === 'page-prev' || btn.action === 'page-next') {
     state.libraryPage += btn.action === 'page-prev' ? -1 : 1;
@@ -214,8 +216,27 @@ function onLibraryButtonSelected(btn) {
     drawLibraryPanel(state.libraryEntries, null);
     return;
   }
+  if (btn.action === 'close') {
+    closeLibrary();
+    return;
+  }
   state.decisionHistory = []; // fresh run starting from the library
   loadScene(btn.next);
+}
+
+function closeLibrary() {
+  const returnState = state.libraryReturnState;
+  state.libraryReturnState = null;
+
+  if (returnState === State.PLAYING) {
+    transitionToPlaying();
+  } else if (returnState === State.DECISION) {
+    transitionToDecision(); // also recreates the gear button
+  } else if (renderer.xr.isPresenting) {
+    // Opened fresh (Menu.html/Player.html with no scenario in progress) —
+    // nothing to go back to inside the page, so leave VR entirely.
+    renderer.xr.getSession()?.end();
+  }
 }
 
 function onTransportAction(btn, uv) {

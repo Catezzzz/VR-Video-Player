@@ -14,6 +14,10 @@ export const state = {
   libraryEntries: null,
   // Current page (0-based) of the in-VR library's fixed 2x3 grid.
   libraryPage: 0,
+  // appState the library replaced (State.PLAYING/State.DECISION), so its
+  // Close button can resume that scene instead of just disappearing. Null
+  // when the library was opened fresh (no scenario in progress to return to).
+  libraryReturnState: null,
 
   // Stack of decision-node paths the user has passed through, used by the
   // "Previous Options" button. Pushed on a story choice, popped on back-nav.
