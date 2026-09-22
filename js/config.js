@@ -4,7 +4,7 @@
 
 import { state } from './state.js';
 
-export const VERSION = '0.11';
+export const VERSION = '0.12 TEST DOANG PANEL SIZES';
 export const SPHERE_RADIUS = 50;
 
 // Transport bar config
@@ -25,18 +25,18 @@ export const DECISION = {
   distance:  5.5,
   height:   -0.3,
   worldW:    4,
-  canvasW:   1078,
+  canvasW:   1078*2,
 };
 
 // Controls how the decision panel's HEIGHT scales with choice count.
 export const DECISION_LAYOUT = {
-  headerH:        180,   // kicker + prompt/hint + top divider
-  choiceBtnH:     120,   // ideal height per choice button
-  choiceGap:      16,    // gap between choice buttons
-  utilAreaH:      140,   // divider + Replay/Previous/Menu row + bottom margin
-  minCanvasH:     620,   // floor, so a 0-1 choice panel isn't a tiny sliver
-  maxCanvasH:     1000,  // ceiling, so a 6-choice panel doesn't dwarf the player
-  pixelsPerMeter: 260,   // keeps text/button scale consistent across sizes
+  headerH:        180*2,   // kicker + prompt/hint + top divider
+  choiceBtnH:     120*2,   // ideal height per choice button
+  choiceGap:      16*2,    // gap between choice buttons
+  utilAreaH:      140*2,   // divider + Replay/Previous/Menu row + bottom margin
+  minCanvasH:     620*2,   // floor, so a 0-1 choice panel isn't a tiny sliver
+  maxCanvasH:     1000*2,  // ceiling, so a 6-choice panel doesn't dwarf the player
+  pixelsPerMeter: 260*2,   // keeps text/button scale consistent across sizes
 };
 
 // Opacity levels for transport bar
@@ -110,17 +110,17 @@ export const FONT_MONO = "'IBM Plex Mono', monospace";
 // tuned in one place instead of hunting through draw calls.
 export const FONT_SIZES = {
   // Decision panel
-  kicker:          20,
-  prompt:          54,
-  hint:            24,
-  badge:           28,
-  choiceLabel:     24,
-  choiceDesc:      20,
-  choiceLabelOnly: 32,
-  choiceArrow:     24,
-  emptyState:      26,
-  utilButton:      28,
-  subtitle:        34,
+  kicker:          20*2,
+  prompt:          54*2,
+  hint:            24*2,
+  badge:           28*2,
+  choiceLabel:     24*2,
+  choiceDesc:      20*2,
+  choiceLabelOnly: 32*2,
+  choiceArrow:     24*2,
+  emptyState:      26*2,
+  utilButton:      28*2,
+  subtitle:        34*2,
 
   // Transport bar
   transportTime:   19,
