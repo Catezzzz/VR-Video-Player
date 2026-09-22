@@ -9,7 +9,7 @@
 import { state } from './state.js';
 import {
   COLOURS, FONT_HEAD, FONT_MONO, getFontSizes,
-  SETTINGS, SETTINGS_LAYOUT, FONT_SCALE_STEPS, DISTANCE_STEPS,
+  SETTINGS, SETTINGS_LAYOUT, FONT_SCALE_STEPS, DISTANCE_STEPS, SUBTITLE_STEPS,
 } from './config.js';
 import { roundRect } from './utils.js';
 
@@ -174,6 +174,15 @@ export function drawSettingsPanel(pending, hoveredId = null) {
   y += 30;
   drawDistanceSlider(ctx, marginX, y, rowW, DISTANCE_STEPS, pending.distanceStepIndex, hoveredId, FONT_SIZES);
   y += 60 + 40;
+
+  // Subtitles row
+  ctx.fillStyle = COLOURS.text;
+  ctx.font      = `500 ${FONT_SIZES.utilButton}px ${FONT_HEAD}`;
+  ctx.textAlign = 'left';
+  ctx.fillText('Subtitles', marginX, y);
+  y += 30;
+  drawStepRow(ctx, marginX, y, rowW, 72, SUBTITLE_STEPS, pending.subtitlesOn ? 1 : 0, hoveredId, 'subtitles', FONT_SIZES);
+  y += 72 + 52;
 
   // Divider above the action row
   ctx.strokeStyle = COLOURS.border;

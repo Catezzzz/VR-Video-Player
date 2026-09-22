@@ -35,6 +35,8 @@ export function loadSettings() {
       ? parsed.fontStepIndex : SETTINGS_DEFAULTS.fontStepIndex,
     distanceStepIndex: isValidStepIndex(parsed.distanceStepIndex, DISTANCE_STEPS.length)
       ? parsed.distanceStepIndex : SETTINGS_DEFAULTS.distanceStepIndex,
+    subtitlesOn: typeof parsed.subtitlesOn === 'boolean'
+      ? parsed.subtitlesOn : SETTINGS_DEFAULTS.subtitlesOn,
   };
 }
 

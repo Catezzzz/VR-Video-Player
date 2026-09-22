@@ -30,9 +30,10 @@ export const state = {
   panelButtons:     [], // [{ x, y, w, h, id, label, next }] in canvas coords
   transportButtons: [],
 
-  // Committed user settings (font size, panel distance, ...) — persisted to
-  // localStorage. Indices into config.js's FONT_SCALE_STEPS/DISTANCE_STEPS.
-  settings: { fontStepIndex: 2, distanceStepIndex: 2 },
+  // Committed user settings (font size, panel distance, subtitles, ...) —
+  // persisted to localStorage. fontStepIndex/distanceStepIndex are indices
+  // into config.js's FONT_SCALE_STEPS/DISTANCE_STEPS; subtitlesOn is a plain bool.
+  settings: { fontStepIndex: 2, distanceStepIndex: 2, subtitlesOn: false },
 
   // Draft copy edited live while the settings panel is open; only copied
   // into `settings` on Apply. Null whenever the panel is closed.
@@ -52,8 +53,9 @@ export const state = {
   gearHovered: false,
 
 
-    // Subtitles — own mesh, independent of panelMesh's create/dispose cycle
-    subtitlesOn:     true,
+    // Subtitles — own mesh, independent of panelMesh's create/dispose cycle.
+    // Whether they're shown is state.settings.subtitlesOn (persisted); these
+    // are just the runtime cue/mesh bookkeeping.
     subtitleCues:    [],   // [{ start, end, text }] for the active scene
     subtitleCursor:  0,    // index hint for the active-cue scan
     subtitleShown:   -1,   // cue index currently drawn (-1 = none); guards redraws

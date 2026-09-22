@@ -159,6 +159,8 @@ export function handleSettingsButtonClick(idx, uv, resume) {
     state.pendingSettings.fontStepIndex = btn.stepIndex;
   } else if (btn.action === 'distance-slider') {
     state.pendingSettings.distanceStepIndex = sliderUvToStepIndex(btn, uv);
+  } else if (btn.action === 'subtitles') {
+    state.pendingSettings.subtitlesOn = btn.stepIndex === 1;
   }
   drawSettingsPanel(state.pendingSettings, state.hoveredBtn);
 }

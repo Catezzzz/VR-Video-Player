@@ -157,7 +157,7 @@ export const SETTINGS = {
   canvasW:  820,
 };
 export const SETTINGS_LAYOUT = {
-  canvasH:        620,  // fixed — content is static (2 controls + action row), not choice-count dependent
+  canvasH:        740,  // fixed — content is static (3 controls + action row), not choice-count dependent
   pixelsPerMeter: 300,
 };
 
@@ -186,7 +186,14 @@ export const DISTANCE_STEPS = Array.from({ length: 11 }, (_, i) => ({
   offset: (i - 5) * 0.4, // index 5 (the middle of 0..10) => 0
 }));
 
-export const SETTINGS_DEFAULTS = { fontStepIndex: 2, distanceStepIndex: 5 };
+// On/Off segmented control for the subtitles toggle — same drawStepRow()
+// widget the font-size row uses, just with two steps instead of five.
+export const SUBTITLE_STEPS = [
+  { label: 'Off', value: false },
+  { label: 'On',  value: true  },
+];
+
+export const SETTINGS_DEFAULTS = { fontStepIndex: 2, distanceStepIndex: 5, subtitlesOn: false };
 export const SETTINGS_STORAGE_KEY = 'vrplayer.settings.v1';
 
 /* Scaled copy of FONT_SIZES reflecting the user's committed font-size

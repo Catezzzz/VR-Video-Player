@@ -251,7 +251,7 @@ export function updateSubtitles(dt) {
   const mesh = state.subtitleMesh;
   if (!mesh) return;
 
-  const visible = state.subtitlesOn
+  const visible = state.settings.subtitlesOn
     && state.appState === State.PLAYING
     && !state.settingsOpen;
 
