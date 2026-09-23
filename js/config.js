@@ -12,7 +12,7 @@ export const VERSION = '0.15';
 // bumping CACHE_VERSION forces the Service Worker to drop its old cache
 // and redownload the full scenario tree on next launch. Must be kept in
 // sync with the matching CACHE_VERSION constant in sw.js.
-export const CACHE_VERSION = 'v2';
+export const CACHE_VERSION = 'v1';
 
 export const SPHERE_RADIUS = 50;
 
