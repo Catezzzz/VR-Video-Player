@@ -27,6 +27,29 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
+// Video elements issue many small Range requests per second while playing,
+// not one request for the whole file. Re-reading the full cached file into
+// a Blob on every single one of those (as a naive implementation would) is
+// what actually caused the near-frozen playback — it wasn't a decode
+// problem, it was the Service Worker re-reading a huge file off disk
+// dozens of times a second. This map keeps the materialized Blob around
+// per URL so repeat Range requests for the same video are effectively
+// free. Capped small since only the current (and maybe previous) video
+// need to stay warm.
+const blobCache = new Map();
+const BLOB_CACHE_LIMIT = 2;
+
+async function getBlobFor(url, cachedResponse) {
+  if (blobCache.has(url)) return blobCache.get(url);
+  const blob = await cachedResponse.blob();
+  if (blobCache.size >= BLOB_CACHE_LIMIT) {
+    const oldestKey = blobCache.keys().next().value;
+    blobCache.delete(oldestKey);
+  }
+  blobCache.set(url, blob);
+  return blob;
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -37,7 +60,7 @@ self.addEventListener('fetch', (event) => {
 
     if (cached) {
       const range = req.headers.get('range');
-      return range ? rangedResponse(cached, range) : cached;
+      return range ? rangedResponse(cached, range, req.url) : cached;
     }
 
     // Not cached — shouldn't normally happen once the initial download is
@@ -59,8 +82,8 @@ self.addEventListener('fetch', (event) => {
 // scrubbing/seeking on cached video behaves the same as it does streaming
 // live. Without this, the video element can only play cached video start
 // to finish and seeking breaks.
-async function rangedResponse(cachedResponse, rangeHeader) {
-  const blob = await cachedResponse.blob();
+async function rangedResponse(cachedResponse, rangeHeader, url) {
+  const blob = await getBlobFor(url, cachedResponse);
   const size = blob.size;
   const match = /bytes=(\d*)-(\d*)/.exec(rangeHeader) || [];
   let start = match[1] ? parseInt(match[1], 10) : 0;
