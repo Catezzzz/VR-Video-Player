@@ -5,6 +5,15 @@
 import { state } from './state.js';
 
 export const VERSION = '0.13';
+
+// Bump this when you push a content change (new/edited scenario or video)
+// that installed offline copies should pick up. Separate from VERSION
+// above, which is just your own visual "did this device update" check —
+// bumping CACHE_VERSION forces the Service Worker to drop its old cache
+// and redownload the full scenario tree on next launch. Must be kept in
+// sync with the matching CACHE_VERSION constant in sw.js.
+export const CACHE_VERSION = 'v1';
+
 export const SPHERE_RADIUS = 50;
 
 // Transport bar config

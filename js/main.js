@@ -17,6 +17,7 @@ import { drawTransportBar } from './draw-transport.js';
 import { updateVRHover } from './vr-controllers.js';
 import { loadSettings } from './settings-store.js';
 import { updateSubtitles } from './subtitles.js';
+import { ensureOfflineReady } from './offline-install.js';
 
 loadSettings(); // populate state.settings from localStorage before anything renders
 
@@ -49,9 +50,14 @@ if (state.appState === State.PLAYING && !state.settingsOpen && time - lastTransp
 });
 
 /* ─── Boot ─────────────────────────────────────────────────────────────── */
-if (SCENARIO_PARAM) {
-  loadScene(ROOT_JSON);
-}
-// else: idle boot. Used by Menu.html, and by Player.html opened with no
-// ?scenario=. The shared Enter VR handler in scene-loader.js drops
-// straight into the in-VR library instead of playing a video.
+// On the installed app, this blocks until the one-time full offline
+// download finishes (see offline-install.js). On desktop/incognito it
+// resolves immediately and changes nothing about today's behaviour.
+ensureOfflineReady().then(() => {
+  if (SCENARIO_PARAM) {
+    loadScene(ROOT_JSON);
+  }
+  // else: idle boot. Used by Menu.html, and by Player.html opened with no
+  // ?scenario=. The shared Enter VR handler in scene-loader.js drops
+  // straight into the in-VR library instead of playing a video.
+});
