@@ -35,7 +35,16 @@ export async function ensureOfflineReady() {
 
   const cache = await caches.open(CACHE_NAME);
   if (await cache.match(COMPLETE_MARKER)) {
-    return; // already fully downloaded for this CACHE_VERSION
+    // Already have a full library. Hand the current URL list to the
+    // Service Worker and let it check each one's ETag in the background —
+    // this never blocks boot, and it's silent unless it actually finds
+    // something changed (see sw.js). Lives in the Service Worker rather
+    // than here because a check made from the page would get intercepted
+    // by our own cache-first fetch handler and just hand back the stale
+    // cached copy instead of ever reaching the network.
+    const urls = await collectAllUrls();
+    navigator.serviceWorker.controller?.postMessage({ type: 'CHECK_FOR_CONTENT_UPDATES', urls });
+    return;
   }
 
   showOverlay('Downloading content…', 'This happens once. Stay on Wi-Fi.');

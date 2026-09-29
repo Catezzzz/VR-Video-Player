@@ -27,6 +27,85 @@ self.addEventListener('activate', (event) => {
   })());
 });
 
+// Checks each already-known content URL's ETag against the live one and
+// only refetches files that actually changed — an edited video or scenario
+// JSON updates on its own, without a manual CACHE_VERSION bump (which
+// wipes and redownloads everything). Lives here, not in offline-install.js,
+// because a check made from the page would get intercepted by our own
+// fetch handler below and just hand back the stale cached copy — a fetch
+// the Service Worker makes on its own doesn't re-trigger its own
+// interception, so this is the only place it can actually reach network.
+const ETAG_MANIFEST_KEY = '/__etag_manifest__';
+
+async function readEtagManifest(cache) {
+  const res = await cache.match(ETAG_MANIFEST_KEY);
+  if (!res) return {};
+  try { return await res.json(); } catch { return {}; }
+}
+
+async function writeEtagManifest(cache, manifest) {
+  await cache.put(ETAG_MANIFEST_KEY, new Response(JSON.stringify(manifest)));
+}
+
+async function checkForContentUpdates(urls) {
+  const cache = await caches.open(CACHE_NAME);
+  const manifest = await readEtagManifest(cache);
+  const toUpdate = [];
+
+  for (const url of urls) {
+    try {
+      const head = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+      const liveEtag = head.headers.get('etag');
+      const knownEtag = manifest[url];
+
+      if (liveEtag && knownEtag && liveEtag !== knownEtag) {
+        toUpdate.push(url); // confirmed changed
+      } else if (!knownEtag) {
+        // No baseline recorded yet — either a brand-new file (new
+        // scenario branch) or one cached before this feature existed.
+        // Only actually fetch it if we don't already have a cached copy;
+        // otherwise just record its ETag as the new baseline, so
+        // upgrading to this feature never triggers a surprise mass
+        // redownload of an already-complete library.
+        const already = await cache.match(url);
+        if (!already) {
+          toUpdate.push(url);
+        } else if (liveEtag) {
+          manifest[url] = liveEtag;
+        }
+      }
+    } catch (err) {
+      // Offline, or this one file unreachable — leave the cached copy as
+      // it is and try again next launch.
+    }
+  }
+
+  for (const url of toUpdate) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (res.ok) {
+        await cache.put(url, res.clone());
+        const etag = res.headers.get('etag');
+        if (etag) manifest[url] = etag;
+      }
+    } catch (err) {
+      console.warn('[sw] failed to update', url, err);
+    }
+  }
+
+  if (toUpdate.length) {
+    await writeEtagManifest(cache, manifest);
+    console.log(`[sw] content update: refetched ${toUpdate.length} changed file(s)`);
+  }
+}
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'CHECK_FOR_CONTENT_UPDATES' && Array.isArray(event.data.urls)) {
+    const promise = checkForContentUpdates(event.data.urls);
+    if (event.waitUntil) event.waitUntil(promise);
+  }
+});
+
 // Video elements issue many small Range requests per second while playing,
 // not one request for the whole file. Re-reading the full cached file into
 // a Blob on every single one of those (as a naive implementation would) is
