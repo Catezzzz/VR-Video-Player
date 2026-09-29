@@ -24,7 +24,11 @@ export async function ensureOfflineReady() {
     return; // desktop/incognito path — untouched, no Service Worker at all
   }
 
-  await navigator.serviceWorker.register('sw.js');
+  // updateViaCache: 'none' stops the browser from trusting a possibly
+  // stale HTTP-cached copy of sw.js when checking for updates — without
+  // this, a real code change can sit unnoticed for a while even though
+  // you pushed it.
+  await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
   if (navigator.storage?.persist) {
     await navigator.storage.persist().catch(() => {});
   }

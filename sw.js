@@ -50,30 +50,58 @@ async function getBlobFor(url, cachedResponse) {
   return blob;
 }
 
+// Two different kinds of thing flow through this fetch handler, and they
+// need opposite caching strategies:
+//  - Content (scenario JSON/srt/thumbnails under /scenarios/, and videos
+//    on the R2 host) should be cache-first, deliberately, until you bump
+//    CACHE_VERSION — that's the whole point of the offline download.
+//  - The app shell (Menu.html, Player.html, everything under js/,
+//    manifest.json) should always prefer a fresh network copy, only
+//    falling back to cache if actually offline. Treating this like
+//    content was the bug: the first-ever launch cached config.js/main.js
+//    once and then served that frozen copy forever, no matter what got
+//    pushed to GitHub afterward.
+function isContentRequest(url) {
+  try {
+    const u = new URL(url);
+    if (u.pathname.includes('/scenarios/')) return true;
+    if (u.hostname !== self.location.hostname) return true; // video CDN (R2)
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(req, { ignoreSearch: true, ignoreVary: true });
 
-    if (cached) {
-      const range = req.headers.get('range');
-      return range ? rangedResponse(cached, range, req.url) : cached;
+    if (isContentRequest(req.url)) {
+      const cached = await cache.match(req, { ignoreSearch: true, ignoreVary: true });
+      if (cached) {
+        const range = req.headers.get('range');
+        return range ? rangedResponse(cached, range, req.url) : cached;
+      }
+      try {
+        const netRes = await fetch(req);
+        if (netRes.ok && netRes.type !== 'opaque') cache.put(req, netRes.clone());
+        return netRes;
+      } catch (err) {
+        return new Response('Offline and not yet cached.', { status: 503 });
+      }
     }
 
-    // Not cached — shouldn't normally happen once the initial download is
-    // done, but covers anything added after the fact. Falls back to
-    // network and stashes a copy for next time.
+    // App shell: network-first, cache only as an offline fallback.
     try {
       const netRes = await fetch(req);
-      if (netRes.ok && netRes.type !== 'opaque') {
-        cache.put(req, netRes.clone());
-      }
+      if (netRes.ok && netRes.type !== 'opaque') cache.put(req, netRes.clone());
       return netRes;
     } catch (err) {
-      return new Response('Offline and not yet cached.', { status: 503 });
+      const cached = await cache.match(req, { ignoreSearch: true, ignoreVary: true });
+      return cached || new Response('Offline and not yet cached.', { status: 503 });
     }
   })());
 });
