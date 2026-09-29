@@ -18,6 +18,12 @@ export const vrBtnEl   = document.getElementById('vr-btn');
 const footerEl = document.getElementById('version-txt');
 footerEl.textContent = VERSION;
 
+// Lets offline-install.js report what its last background content-sync
+// check found, directly on screen — no remote debugging needed to see it.
+export function setSyncStatus(text) {
+  footerEl.textContent = `${VERSION} · ${text}`;
+}
+
 export function showOverlay(title, desc) {
   titleEl.textContent = title;
   descEl.textContent  = desc;

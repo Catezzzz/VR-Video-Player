@@ -13,7 +13,7 @@
 //      through instead of re-checking every file.
 
 import { CACHE_VERSION, MANIFEST_URL } from './config.js';
-import { showOverlay, hideOverlay, setLoadProgress, descEl } from './overlay.js';
+import { showOverlay, hideOverlay, setLoadProgress, descEl, setSyncStatus } from './overlay.js';
 
 const CACHE_NAME = `content-${CACHE_VERSION}`;
 const COMPLETE_MARKER = '/__offline_complete__';
@@ -35,15 +35,7 @@ export async function ensureOfflineReady() {
 
   const cache = await caches.open(CACHE_NAME);
   if (await cache.match(COMPLETE_MARKER)) {
-    // Already have a full library. Hand the current URL list to the
-    // Service Worker and let it check each one's ETag in the background —
-    // this never blocks boot, and it's silent unless it actually finds
-    // something changed (see sw.js). Lives in the Service Worker rather
-    // than here because a check made from the page would get intercepted
-    // by our own cache-first fetch handler and just hand back the stale
-    // cached copy instead of ever reaching the network.
-    const urls = await collectAllUrls();
-    navigator.serviceWorker.controller?.postMessage({ type: 'CHECK_FOR_CONTENT_UPDATES', urls });
+    requestContentSync(); // fire-and-forget — see below, never blocks boot
     return;
   }
 
@@ -69,6 +61,35 @@ export async function ensureOfflineReady() {
   await cache.put(COMPLETE_MARKER, new Response('ok'));
   await logStorageEstimate();
   hideOverlay();
+}
+
+// Tells the Service Worker to check for changed content and lets it run in
+// the background — never blocks boot. The actual crawl-and-check work all
+// happens inside sw.js now, not here: a page-side fetch for an
+// already-cached JSON path would get intercepted by our own cache-first
+// fetch handler and served the stale cached copy, which would make the
+// check blind to exactly the kind of edit (a changed video link inside an
+// existing JSON file) this feature exists to catch. Fetches issued from
+// inside the Service Worker's own code don't have that problem.
+//
+// Reports the result on screen via setSyncStatus (next to the version
+// number on the loading screen), since there's no console to check on a
+// standalone headset without a computer involved.
+function requestContentSync() {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type !== 'CONTENT_UPDATE_RESULT') return;
+    const { checked, updated } = event.data;
+    setSyncStatus(updated > 0 ? `synced, ${updated} updated` : `synced, up to date (${checked} checked)`);
+  });
+
+  const send = () => navigator.serviceWorker.controller?.postMessage({ type: 'CHECK_FOR_CONTENT_UPDATES' });
+  send();
+  // On the very first launch right after a sw.js code change, the new
+  // Service Worker may not have taken control yet when send() above runs,
+  // so that message can go to the outgoing (old) worker instead, which
+  // doesn't know about this message type. Resend once control actually
+  // switches over, so this works on the first launch, not just the second.
+  navigator.serviceWorker.addEventListener('controllerchange', send, { once: true });
 }
 
 // Walks the whole branching tree from scenarios.json, following every

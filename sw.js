@@ -37,6 +37,56 @@ self.addEventListener('activate', (event) => {
 // interception, so this is the only place it can actually reach network.
 const ETAG_MANIFEST_KEY = '/__etag_manifest__';
 
+// Mirrors collectAllUrls() in js/offline-install.js, deliberately
+// duplicated rather than shared — this crawl has to run from inside the
+// Service Worker itself. If it ran from the page instead, fetching an
+// already-cached JSON path would hit our OWN fetch handler below and get
+// served the stale cached copy, making the crawl blind to exactly the
+// kind of edit (a changed video link inside an existing JSON file) this
+// feature exists to catch.
+//
+// IMPORTANT: MANIFEST_URL here must match MANIFEST_URL in js/config.js.
+const MANIFEST_URL = 'scenarios/scenarios.json';
+
+async function collectAllUrls() {
+  const urls = new Set([MANIFEST_URL]);
+  const visited = new Set();
+
+  const manifest = await fetch(MANIFEST_URL, { cache: 'no-store' }).then((r) => r.json());
+  const queue = manifest.map((entry) => entry.intro).filter(Boolean);
+  for (const entry of manifest) {
+    if (entry.thumbnail) urls.add(entry.thumbnail);
+  }
+
+  while (queue.length) {
+    const jsonPath = queue.shift();
+    if (visited.has(jsonPath)) continue;
+    visited.add(jsonPath);
+    urls.add(jsonPath);
+
+    let node;
+    try {
+      node = await fetch(jsonPath, { cache: 'no-store' }).then((r) => r.json());
+    } catch (err) {
+      continue;
+    }
+
+    const base = jsonPath.substring(0, jsonPath.lastIndexOf('/') + 1);
+    if (node.video) {
+      urls.add(node.video.startsWith('http') ? node.video : base + node.video);
+    }
+    if (node.subtitles) {
+      urls.add(node.subtitles.startsWith('http') ? node.subtitles : base + node.subtitles);
+    }
+    if (node.next) queue.push(node.next);
+    for (const choice of node.decision?.choices || []) {
+      if (choice.next) queue.push(choice.next);
+    }
+  }
+
+  return [...urls];
+}
+
 async function readEtagManifest(cache) {
   const res = await cache.match(ETAG_MANIFEST_KEY);
   if (!res) return {};
@@ -47,7 +97,8 @@ async function writeEtagManifest(cache, manifest) {
   await cache.put(ETAG_MANIFEST_KEY, new Response(JSON.stringify(manifest)));
 }
 
-async function checkForContentUpdates(urls) {
+async function checkForContentUpdates() {
+  const urls = await collectAllUrls(); // always a fresh read, see above
   const cache = await caches.open(CACHE_NAME);
   const manifest = await readEtagManifest(cache);
   const toUpdate = [];
@@ -97,11 +148,19 @@ async function checkForContentUpdates(urls) {
     await writeEtagManifest(cache, manifest);
     console.log(`[sw] content update: refetched ${toUpdate.length} changed file(s)`);
   }
+
+  // Report the result back to the page — this is what actually shows up
+  // on screen (next to the version number), since there's no console to
+  // check on a standalone headset.
+  const clientsList = await self.clients.matchAll();
+  for (const client of clientsList) {
+    client.postMessage({ type: 'CONTENT_UPDATE_RESULT', checked: urls.length, updated: toUpdate.length });
+  }
 }
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'CHECK_FOR_CONTENT_UPDATES' && Array.isArray(event.data.urls)) {
-    const promise = checkForContentUpdates(event.data.urls);
+  if (event.data?.type === 'CHECK_FOR_CONTENT_UPDATES') {
+    const promise = checkForContentUpdates();
     if (event.waitUntil) event.waitUntil(promise);
   }
 });
