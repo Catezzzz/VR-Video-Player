@@ -4,7 +4,7 @@
 
 import { state } from './state.js';
 
-export const VERSION = '0.22';
+export const VERSION = '0.23';
 
 // Bump this when you push a content change (new/edited scenario or video)
 // that installed offline copies should pick up. Separate from VERSION
@@ -65,7 +65,7 @@ export const PANEL_FOLLOW = {
 // fixed world height, so it holds position across distance settings.
 export const SUBTITLES = {
   distance:  3.0,
-  pitchDeg: -18,     // degrees below the horizon; negative = below
+  pitchDeg: -30,     // degrees below the horizon; negative = below
   worldW:    3.4,
   canvasW:   1024,
   canvasH:   256,
