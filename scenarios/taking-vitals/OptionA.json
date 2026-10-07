@@ -3,7 +3,7 @@
   "video": "https://pub-df3f54003e84465ba69c09262f894905.r2.dev/taking-vitals/option%20A_with%20image.mp4",
   "subtitles": "optionA.srt",
   "decision": {
-    "prompt": "What will you do?",
+    "prompt": "Select an option",
     "choices": [
       {
         "label": "Complete vital signs",
