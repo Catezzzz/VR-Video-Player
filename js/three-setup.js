@@ -11,6 +11,7 @@ export const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.setSize(innerWidth, innerHeight);
 renderer.xr.enabled = true;
+renderer.xr.setFoveation(0); // 0 = off, 1 = max (three.js default)
 document.body.appendChild(renderer.domElement);
 
 export const scene  = new THREE.Scene();

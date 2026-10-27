@@ -4,7 +4,7 @@
 
 import { state } from './state.js';
 
-export const VERSION = '0.23';
+export const VERSION = '0.24';
 
 // Bump this when you push a content change (new/edited scenario or video)
 // that installed offline copies should pick up. Separate from VERSION

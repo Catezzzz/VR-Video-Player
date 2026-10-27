@@ -170,6 +170,7 @@ vrBtnEl.addEventListener('click', () => {
   navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor', 'bounded-floor'] })
     .then(session => {
       renderer.xr.setSession(session);
+      renderer.xr.setFoveation(0); //set foveation incase build ignores three setup
       hideOverlay();
       if (state.appState === State.LOADING || video.readyState >= 3) {
         video.play().catch(() => {});
