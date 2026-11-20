@@ -6,7 +6,7 @@
     "prompt": "What will you do?",
     "choices": [
       {
-        "label": "Put down the water and leave the room",
+        "label": "Leave the room and document",
         "next": "scenarios/yelling-patient/OptionA.json"
       },
       {
