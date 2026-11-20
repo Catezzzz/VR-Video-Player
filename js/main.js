@@ -12,7 +12,7 @@ import { scene, camera, renderer } from './three-setup.js';
 import { state, State } from './state.js';
 import { SCENARIO_PARAM, ROOT_JSON } from './config.js';
 import { loadScene } from './scene-loader.js';
-import { positionPanel, updatePanelOpacity } from './panel-mesh.js';
+import { positionPanel, updatePanelOpacity, applyTransportVisibility } from './panel-mesh.js';
 import { drawTransportBar } from './draw-transport.js';
 import { updateVRHover } from './vr-controllers.js';
 import { loadSettings } from './settings-store.js';
@@ -38,6 +38,7 @@ renderer.setAnimationLoop((time) => {
 
   // Smoothly animate transport bar opacity every frame
   updatePanelOpacity();
+  applyTransportVisibility();
   updateSubtitles(dt);
 
   // Update transport bar every ~250 ms while playing

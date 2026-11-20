@@ -5,8 +5,8 @@
 
 import * as THREE from 'three';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
-import { renderer, scene } from './three-setup.js';
-import { state } from './state.js';
+import { renderer, scene, video } from './three-setup.js';
+import { state, State } from './state.js';
 import { raycaster, getActiveHit, applyHoverHit, handlePanelClick, resumeCurrentPanel } from './interaction.js';
 import { toggleSettings } from './settings.js';
 
@@ -58,19 +58,42 @@ export function updateVRHover() {
   pollJoystickToggle();
 }
 
-/* Thumbstick-click (button index 3 on Quest Touch controllers) toggles the
-   settings panel open/closed from anywhere — independent of app state or
-   what the controller ray is currently pointing at. Tracks per-inputSource
-   press state so it fires once per press, not once per frame held down. */
-const joystickWasPressed = [];
+/* Controller button polling — called every frame from updateVRHover().
+   Edge-triggered per inputSource, so each fires once per press, not once
+   per frame held down. Works on either hand.
+     Thumbstick click (3)           -> settings panel
+     Grip / side trigger (1, "R2")  -> show/hide transport bar
+     A / X (4)                      -> play/pause
+   If R2 should mean the index trigger instead, set TOGGLE_TRANSPORT_BTN to
+   0 (it will then also fire the panel click, since trigger = select). */
+const TOGGLE_TRANSPORT_BTN = 1;
+const wasPressed = {};  // keyed by "inputSourceIndex:buttonIndex"
+
+function edge(i, btn, gp) {
+  const key = `${i}:${btn}`;
+  const pressed = !!gp?.buttons?.[btn]?.pressed;
+  const fired = pressed && !wasPressed[key];
+  wasPressed[key] = pressed;
+  return fired;
+}
 
 function pollJoystickToggle() {
   const session = renderer.xr.getSession?.();
   if (!session) return;
   session.inputSources.forEach((src, i) => {
     const gp = src.gamepad;
-    const pressed = !!gp?.buttons?.[3]?.pressed;
-    if (pressed && !joystickWasPressed[i]) toggleSettings(resumeCurrentPanel);
-    joystickWasPressed[i] = pressed;
+    if (edge(i, 3, gp)) toggleSettings(resumeCurrentPanel);
+    if (edge(i, TOGGLE_TRANSPORT_BTN, gp)) toggleTransport();
+    if (edge(i, 4, gp)) togglePlayPause();
   });
+}
+
+function toggleTransport() {
+  if (state.appState !== State.PLAYING || state.settingsOpen) return;
+  state.transportHidden = !state.transportHidden;
+}
+
+function togglePlayPause() {
+  if (state.appState !== State.PLAYING || state.settingsOpen) return;
+  video.paused ? video.play().catch(() => {}) : video.pause();
 }

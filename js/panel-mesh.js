@@ -4,7 +4,7 @@
 // changes), plus its camera-relative follow behaviour and opacity animation.
 
 import * as THREE from 'three';
-import { scene, camera } from './three-setup.js';
+import { scene, camera, renderer } from './three-setup.js';
 import { state, State } from './state.js';
 import { TRANSPORT, DECISION, LIBRARY, SETTINGS, PANEL_FOLLOW, TRANSPORT_OPACITY_IDLE, TRANSPORT_OPACITY_ACTIVE, getDistanceOffset } from './config.js';
 
@@ -111,4 +111,14 @@ export function updatePanelOpacity() {
     // Decision panel / library / settings are always fully opaque
     state.panelMesh.material.opacity = 1.0;
   }
+}
+
+/* Hides the transport bar while in VR if the user toggled it off (R2).
+   Desktop always shows it. Called every frame from main.js, so it also
+   covers entering/exiting VR, scene swaps and settings closing. */
+export function applyTransportVisibility() {
+  if (!state.panelMesh) return;
+  const isTransport = state.appState === State.PLAYING && !state.settingsOpen;
+  const hide = isTransport && state.transportHidden && renderer.xr.isPresenting;
+  state.panelMesh.visible = !hide;
 }

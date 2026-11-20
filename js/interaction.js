@@ -48,7 +48,7 @@ export function getActiveHit() {
     const hits = raycaster.intersectObject(state.gearMesh, false);
     if (hits.length) return { kind: 'gear', uv: hits[0].uv };
   }
-  if (state.panelMesh) {
+  if (state.panelMesh && state.panelMesh.visible) {
     const hits = raycaster.intersectObject(state.panelMesh, false);
     if (hits.length) return { kind: 'main', uv: hits[0].uv };
   }

@@ -27,6 +27,8 @@ export const state = {
   isPanelHovered: false,
   hoveredBtn: null,
   isMuted: false,
+  // Transport bar hidden by default in VR (desktop always shows it). R2 toggles.
+  transportHidden: true,
 
   // Panel mesh (shared, swaps canvas depending on transport vs decision view)
   panelMesh:   null,
