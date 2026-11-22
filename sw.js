@@ -102,6 +102,7 @@ async function checkForContentUpdates() {
   const cache = await caches.open(CACHE_NAME);
   const manifest = await readEtagManifest(cache);
   const toUpdate = [];
+  let manifestDirty = false;
 
   for (const url of urls) {
     try {
@@ -122,7 +123,12 @@ async function checkForContentUpdates() {
         if (!already) {
           toUpdate.push(url);
         } else if (liveEtag) {
-          manifest[url] = liveEtag;
+          if (/\.(json|srt)$/i.test(url)) {
+            toUpdate.push(url); // no baseline: refetch small text files
+          } else {
+            manifest[url] = liveEtag; // videos: just record a baseline
+            manifestDirty = true;
+          }
         }
       }
     } catch (err) {
@@ -144,7 +150,7 @@ async function checkForContentUpdates() {
     }
   }
 
-  if (toUpdate.length) {
+  if (toUpdate.length || manifestDirty) {
     await writeEtagManifest(cache, manifest);
     console.log(`[sw] content update: refetched ${toUpdate.length} changed file(s)`);
   }
